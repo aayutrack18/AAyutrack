@@ -1,48 +1,21 @@
 name: aayutrack
-description: Digital Compliance & Remote Patient Monitoring Platform
+description: AAYUTRACK healthtech auth module
+publish_to: "none"
+
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-
-  # State management — Riverpod (wired in later sprints)
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
-
-  # Navigation
-  go_router: ^13.2.0
-
-  # UI utilities
-  gap: ^3.0.1
-
-  # Google Fonts — Nunito for brand typography
   google_fonts: ^6.2.1
-
-  # Lottie for animations (optional, for future splash)
-  lottie: ^3.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
-  riverpod_generator: ^2.4.3
+  flutter_lints: ^3.0.2
 
 flutter:
   uses-material-design: true
-
-  # Uncomment if you add local font assets:
-  # fonts:
-  #   - family: Nunito
-  #     fonts:
-  #       - asset: assets/fonts/Nunito-Regular.ttf
-  #       - asset: assets/fonts/Nunito-Bold.ttf
-  #         weight: 700
-  #       - asset: assets/fonts/Nunito-ExtraBold.ttf
-  #         weight: 800
-  #       - asset: assets/fonts/Nunito-Black.ttf
-  #         weight: 900
