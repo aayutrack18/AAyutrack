@@ -6,10 +6,23 @@ import 'package:aayutrack/features/auth/presentation/screens/otp_screen.dart';
 import 'package:aayutrack/features/auth/presentation/screens/phone_login_screen.dart';
 import 'package:aayutrack/features/auth/presentation/screens/splash_screen.dart';
 import 'package:aayutrack/features/auth/presentation/screens/welcome_screen.dart';
+import 'package:aayutrack/features/compliance/presentation/screens/compliance_overview_screen.dart';
+import 'package:aayutrack/features/compliance/presentation/screens/risk_alerts_screen.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/add_health_log_screen.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/health_log_history_screen.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/health_logs_dashboard_screen.dart';
+import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
+import 'package:aayutrack/features/medicine/presentation/screens/add_medicine_screen.dart';
+import 'package:aayutrack/features/medicine/presentation/screens/medicine_detail_screen.dart';
+import 'package:aayutrack/features/medicine/presentation/screens/medicine_list_screen.dart';
 import 'package:aayutrack/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:aayutrack/features/profile/presentation/screens/patient_onboarding_screen.dart';
 import 'package:aayutrack/features/profile/presentation/screens/patient_profile_screen.dart';
 import 'package:aayutrack/features/profile/presentation/screens/profile_gate_screen.dart';
+import 'package:aayutrack/features/reminders/presentation/screens/add_reminder_screen.dart';
+import 'package:aayutrack/features/reminders/presentation/screens/reminder_list_screen.dart';
+import 'package:aayutrack/features/reports/presentation/screens/reports_screen.dart';
+import 'package:aayutrack/features/shell/presentation/main_shell.dart';
 import 'package:flutter/material.dart';
 
 class AppRouter {
@@ -17,6 +30,7 @@ class AppRouter {
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      // ── Auth ──────────────────────────────────────────────────────────
       case AppRoutes.splash:
         return _fade(const SplashScreen(), settings);
 
@@ -29,9 +43,7 @@ class AppRouter {
       case AppRoutes.otp:
         final args = settings.arguments as Map<String, dynamic>?;
         return _slide(
-          OtpScreen(
-            phoneNumber: args?['phoneNumber'] as String? ?? '',
-          ),
+          OtpScreen(phoneNumber: args?['phoneNumber'] as String? ?? ''),
           settings,
         );
 
@@ -44,6 +56,7 @@ class AppRouter {
       case AppRoutes.forgotPassword:
         return _slide(const ForgotPasswordScreen(), settings);
 
+      // ── Profile ───────────────────────────────────────────────────────
       case AppRoutes.profileGate:
         return _slide(const ProfileGateScreen(), settings);
 
@@ -55,6 +68,53 @@ class AppRouter {
 
       case AppRoutes.editProfile:
         return _slide(const EditProfileScreen(), settings);
+
+      // ── Main Shell ────────────────────────────────────────────────────
+      case AppRoutes.home:
+        return _fade(const MainShell(), settings);
+
+      // ── Medicines ─────────────────────────────────────────────────────
+      case AppRoutes.medicineList:
+        return _slide(const MedicineListScreen(), settings);
+
+      case AppRoutes.addMedicine:
+        return _slide(const AddMedicineScreen(), settings);
+
+      case AppRoutes.editMedicine:
+        final medicine = settings.arguments as Medicine?;
+        return _slide(AddMedicineScreen(existing: medicine), settings);
+
+      case AppRoutes.medicineDetail:
+        final medicine = settings.arguments as Medicine;
+        return _slide(MedicineDetailScreen(medicine: medicine), settings);
+
+      // ── Reminders ─────────────────────────────────────────────────────
+      case AppRoutes.reminderList:
+        return _slide(const ReminderListScreen(), settings);
+
+      case AppRoutes.addReminder:
+        return _slide(const AddReminderScreen(), settings);
+
+      // ── Health Logs ───────────────────────────────────────────────────
+      case AppRoutes.healthLogsDashboard:
+        return _slide(const HealthLogsDashboardScreen(), settings);
+
+      case AppRoutes.addHealthLog:
+        return _slide(const AddHealthLogScreen(), settings);
+
+      case AppRoutes.healthLogHistory:
+        return _slide(const HealthLogHistoryScreen(), settings);
+
+      // ── Compliance ────────────────────────────────────────────────────
+      case AppRoutes.complianceOverview:
+        return _slide(const ComplianceOverviewScreen(), settings);
+
+      case AppRoutes.riskAlerts:
+        return _slide(const RiskAlertsScreen(), settings);
+
+      // ── Reports ───────────────────────────────────────────────────────
+      case AppRoutes.reports:
+        return _slide(const ReportsScreen(), settings);
 
       default:
         return _fade(const WelcomeScreen(), settings);
@@ -70,10 +130,7 @@ class AppRouter {
       pageBuilder: (_, __, ___) => page,
       transitionDuration: const Duration(milliseconds: 300),
       transitionsBuilder: (_, animation, __, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
     );
   }
@@ -90,16 +147,11 @@ class AppRouter {
         final tween = Tween<Offset>(
           begin: const Offset(0.08, 0),
           end: Offset.zero,
-        ).chain(
-          CurveTween(curve: Curves.easeOutCubic),
-        );
+        ).chain(CurveTween(curve: Curves.easeOutCubic));
 
         return SlideTransition(
           position: animation.drive(tween),
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
+          child: FadeTransition(opacity: animation, child: child),
         );
       },
     );

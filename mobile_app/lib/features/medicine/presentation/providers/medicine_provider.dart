@@ -1,0 +1,116 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/datasources/medicine_mock_datasource.dart';
+import '../../data/repositories/medicine_repository_impl.dart';
+import '../../domain/entities/medicine.dart';
+import '../../domain/repositories/medicine_repository.dart';
+
+// ─── PROVIDERS ────────────────────────────────────────────────────────────────
+
+final medicineMockDataSourceProvider = Provider<MedicineMockDataSource>((ref) {
+  return MedicineMockDataSource();
+});
+
+final medicineRepositoryProvider = Provider<MedicineRepository>((ref) {
+  return MedicineRepositoryImpl(ref.watch(medicineMockDataSourceProvider));
+});
+
+final medicineProvider =
+    StateNotifierProvider<MedicineNotifier, MedicineState>((ref) {
+  return MedicineNotifier(ref.watch(medicineRepositoryProvider));
+});
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+
+class MedicineState {
+  final bool isLoading;
+  final List<Medicine> medicines;
+  final String? errorMessage;
+
+  const MedicineState({
+    required this.isLoading,
+    required this.medicines,
+    this.errorMessage,
+  });
+
+  factory MedicineState.initial() => const MedicineState(
+        isLoading: false,
+        medicines: [],
+      );
+
+  MedicineState copyWith({
+    bool? isLoading,
+    List<Medicine>? medicines,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return MedicineState(
+      isLoading: isLoading ?? this.isLoading,
+      medicines: medicines ?? this.medicines,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
+
+  List<Medicine> get activeMedicines =>
+      medicines.where((m) => m.isActive).toList();
+
+  List<Medicine> get inactiveMedicines =>
+      medicines.where((m) => !m.isActive).toList();
+
+  bool get hasError => errorMessage != null;
+}
+
+// ─── NOTIFIER ─────────────────────────────────────────────────────────────────
+
+class MedicineNotifier extends StateNotifier<MedicineState> {
+  final MedicineRepository _repository;
+
+  MedicineNotifier(this._repository) : super(MedicineState.initial()) {
+    loadMedicines();
+  }
+
+  Future<void> loadMedicines() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final medicines = await _repository.getMedicines();
+      state = state.copyWith(isLoading: false, medicines: medicines);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> addMedicine(Medicine medicine) async {
+    try {
+      await _repository.saveMedicine(medicine);
+      await loadMedicines();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> updateMedicine(Medicine medicine) async {
+    try {
+      await _repository.updateMedicine(medicine);
+      await loadMedicines();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> deleteMedicine(String id) async {
+    try {
+      await _repository.deleteMedicine(id);
+      await loadMedicines();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> toggleActive(String id, bool isActive) async {
+    try {
+      await _repository.toggleMedicineActive(id, isActive);
+      await loadMedicines();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+}

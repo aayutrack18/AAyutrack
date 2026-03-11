@@ -4,7 +4,26 @@ class ProfileLocalDataSource {
   static const Duration _defaultDelay = Duration(milliseconds: 180);
   static const Duration _syncDelay = Duration(milliseconds: 120);
 
-  PatientProfileModel? _cachedProfile;
+  PatientProfileModel? _cachedProfile = PatientProfileModel(
+    profileId: 'demo_profile_001',
+    userId: 'demo_user_001',
+    fullName: 'Rahul Sharma',
+    age: 45,
+    gender: 'Male',
+    phoneNumber: '+91 98765 43210',
+    email: 'rahul.sharma@example.com',
+    bloodGroup: 'B+',
+    heightCm: 172.0,
+    weightKg: 72.5,
+    address: '12, MG Road, Bengaluru, Karnataka 560001',
+    allergies: 'Penicillin',
+    medicalConditions: 'Type 2 Diabetes, Hypertension',
+    emergencyContactName: 'Priya Sharma',
+    emergencyContactPhone: '+91 98765 11111',
+    createdAt: DateTime(2024, 1, 10),
+    updatedAt: DateTime.now().subtract(const Duration(days: 2)),
+    isSynced: false,
+  );
 
   Future<PatientProfileModel?> getProfile() async {
     await Future.delayed(_defaultDelay);

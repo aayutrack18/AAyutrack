@@ -1,6 +1,7 @@
 class AppRoutes {
   AppRoutes._();
 
+  // Auth
   static const String splash = '/';
   static const String welcome = '/welcome';
   static const String phoneLogin = '/phone-login';
@@ -8,12 +9,44 @@ class AppRoutes {
   static const String emailLogin = '/email-login';
   static const String createAccount = '/create-account';
   static const String forgotPassword = '/forgot-password';
-  static const String dashboard = '/dashboard';
 
+  // Profile
   static const String profileGate = '/profile-gate';
   static const String patientOnboarding = '/patient-onboarding';
   static const String patientProfile = '/patient-profile';
   static const String editProfile = '/edit-profile';
+
+  // Main Shell
+  static const String home = '/home';
+
+  // Dashboard (legacy, redirects to home)
+  static const String dashboard = '/home';
+
+  // Medicine
+  static const String medicineList = '/medicines';
+  static const String addMedicine = '/medicines/add';
+  static const String editMedicine = '/medicines/edit';
+  static const String medicineDetail = '/medicines/detail';
+
+  // Reminders
+  static const String reminderList = '/reminders';
+  static const String addReminder = '/reminders/add';
+  static const String editReminder = '/reminders/edit';
+  static const String notificationSettings = '/reminders/settings';
+
+  // Health Logs
+  static const String healthLogsDashboard = '/health-logs';
+  static const String addHealthLog = '/health-logs/add';
+  static const String healthLogHistory = '/health-logs/history';
+  static const String metricDetail = '/health-logs/metric';
+
+  // Compliance
+  static const String complianceOverview = '/compliance';
+  static const String riskAlerts = '/compliance/alerts';
+
+  // Reports
+  static const String reports = '/reports';
+  static const String reportPreview = '/reports/preview';
 }
 
 class AppSpacing {
