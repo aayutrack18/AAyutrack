@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/router/app_router.dart';
+import 'package:aayutrack/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:aayutrack/features/auth/presentation/widgets/auth_widgets.dart';
 
 class EmailLoginScreen extends StatefulWidget {
@@ -23,14 +26,43 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     super.dispose();
   }
 
-  void _signIn() {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Email login UI ready. Firebase sign-in will be added next.'),
-      ),
-    );
+    final container = ProviderScope.containerOf(context, listen: false);
+
+    final success = await container
+        .read(authStateNotifierProvider.notifier)
+        .signInWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+    if (!mounted) return;
+
+    final authState = container.read(authStateNotifierProvider);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Signed in successfully.'),
+        ),
+      );
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.welcome,
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authState.errorMessage ?? 'Sign in failed. Please try again.',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -108,7 +140,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                        Navigator.pushNamed(
+                          context,
+                          AppRouter.forgotPassword,
+                        );
                       },
                       child: const Text('Forgot Password?'),
                     ),
@@ -130,7 +165,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 const Text('Don’t have an account? '),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.createAccount);
+                    Navigator.pushNamed(
+                      context,
+                      AppRouter.createAccount,
+                    );
                   },
                   child: const Text('Create Account'),
                 ),

@@ -1,22 +1,35 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:aayutrack/core/theme/app_theme.dart';
-import 'package:aayutrack/router/app_router.dart';
-import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const AayuTrackApp());
+import 'core/theme/app_theme.dart';
+import 'firebase_options.dart';
+import 'router/app_router.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class AayuTrackApp extends StatelessWidget {
-  const AayuTrackApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: AppStrings.appName,
+      title: 'AAYUTRACK',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: AppRoutes.splash,
+      initialRoute: AppRouter.welcome,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

@@ -1,75 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:aayutrack/core/constants/app_constants.dart';
-import 'package:aayutrack/features/auth/presentation/screens/create_account_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/email_login_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/forgot_password_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/otp_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/phone_login_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/splash_screen.dart';
-import 'package:aayutrack/features/auth/presentation/screens/welcome_screen.dart';
+
+import '../features/auth/presentation/screens/create_account_screen.dart';
+import '../features/auth/presentation/screens/email_login_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/otp_screen.dart';
+import '../features/auth/presentation/screens/phone_login_screen.dart';
+import '../features/auth/presentation/screens/splash_screen.dart';
+import '../features/auth/presentation/screens/welcome_screen.dart';
 
 class AppRouter {
-  AppRouter._();
+  static const String splash = '/';
+  static const String welcome = '/welcome';
+  static const String phoneLogin = '/phone-login';
+  static const String otp = '/otp';
+  static const String emailLogin = '/email-login';
+  static const String createAccount = '/create-account';
+  static const String forgotPassword = '/forgot-password';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case AppRoutes.splash:
-        return _fade(const SplashScreen(), settings);
+      case splash:
+        return _materialRoute(const SplashScreen(), settings);
 
-      case AppRoutes.welcome:
-        return _fade(const WelcomeScreen(), settings);
+      case welcome:
+        return _materialRoute(const WelcomeScreen(), settings);
 
-      case AppRoutes.phoneLogin:
-        return _slide(const PhoneLoginScreen(), settings);
+      case phoneLogin:
+        return _materialRoute(const PhoneLoginScreen(), settings);
 
-      case AppRoutes.otp:
+      case otp:
         final args = settings.arguments as Map<String, dynamic>?;
-        return _slide(
-          OtpScreen(phoneNumber: args?['phoneNumber'] as String? ?? ''),
+        final phoneNumber = args?['phoneNumber'] as String?;
+
+        if (phoneNumber == null || phoneNumber.isEmpty) {
+          return _errorRoute(
+            'Phone number not provided for OTP screen.',
+            settings,
+          );
+        }
+
+        return _materialRoute(
+          OtpScreen(phoneNumber: phoneNumber),
           settings,
         );
 
-      case AppRoutes.emailLogin:
-        return _slide(const EmailLoginScreen(), settings);
+      case emailLogin:
+        return _materialRoute(const EmailLoginScreen(), settings);
 
-      case AppRoutes.createAccount:
-        return _slide(const CreateAccountScreen(), settings);
+      case createAccount:
+        return _materialRoute(const CreateAccountScreen(), settings);
 
-      case AppRoutes.forgotPassword:
-        return _slide(const ForgotPasswordScreen(), settings);
+      case forgotPassword:
+        return _materialRoute(const ForgotPasswordScreen(), settings);
 
       default:
-        return _fade(const WelcomeScreen(), settings);
+        return _errorRoute('Route not found', settings);
     }
   }
 
-  static PageRouteBuilder _fade(Widget page, RouteSettings settings) {
-    return PageRouteBuilder(
+  static MaterialPageRoute _materialRoute(
+    Widget screen,
+    RouteSettings settings,
+  ) {
+    return MaterialPageRoute(
+      builder: (_) => screen,
       settings: settings,
-      pageBuilder: (_, __, ___) => page,
-      transitionDuration: const Duration(milliseconds: 300),
-      transitionsBuilder: (_, animation, __, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
     );
   }
 
-  static PageRouteBuilder _slide(Widget page, RouteSettings settings) {
-    return PageRouteBuilder(
+  static MaterialPageRoute _errorRoute(
+    String message,
+    RouteSettings settings,
+  ) {
+    return MaterialPageRoute(
+      builder: (_) => Scaffold(
+        body: Center(
+          child: Text(message),
+        ),
+      ),
       settings: settings,
-      pageBuilder: (_, __, ___) => page,
-      transitionDuration: const Duration(milliseconds: 320),
-      transitionsBuilder: (_, animation, __, child) {
-        final tween = Tween<Offset>(
-          begin: const Offset(0.08, 0),
-          end: Offset.zero,
-        ).chain(CurveTween(curve: Curves.easeOutCubic));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
     );
   }
 }

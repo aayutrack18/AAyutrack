@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aayutrack/router/app_router.dart';
+import 'package:aayutrack/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:aayutrack/features/auth/presentation/widgets/auth_widgets.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -29,16 +32,45 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     super.dispose();
   }
 
-  void _createAccount() {
+  Future<void> _createAccount() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Create account UI ready. Firebase registration will be added next.',
+    final container = ProviderScope.containerOf(context, listen: false);
+
+    final success = await container
+        .read(authStateNotifierProvider.notifier)
+        .createAccount(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+    if (!mounted) return;
+
+    final authState = container.read(authStateNotifierProvider);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully.'),
         ),
-      ),
-    );
+      );
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.welcome,
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authState.errorMessage ??
+                'Account creation failed. Please try again.',
+          ),
+        ),
+      );
+    }
   }
 
   @override
