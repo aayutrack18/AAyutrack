@@ -28,7 +28,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Email login UI ready. Firebase sign-in will be added next.'),
+        content:
+            Text('Email login UI ready. Firebase sign-in will be added next.'),
       ),
     );
   }

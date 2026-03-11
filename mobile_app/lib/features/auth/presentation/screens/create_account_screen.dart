@@ -66,10 +66,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    validator: (value) =>
-                        value == null || value.trim().isEmpty
-                            ? 'Enter your full name'
-                            : null,
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Enter your full name'
+                        : null,
                     decoration: const InputDecoration(
                       hintText: 'Full name',
                     ),
@@ -78,10 +77,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) =>
-                        value == null || !value.contains('@')
-                            ? 'Enter a valid email'
-                            : null,
+                    validator: (value) => value == null || !value.contains('@')
+                        ? 'Enter a valid email'
+                        : null,
                     decoration: const InputDecoration(
                       hintText: 'Email address',
                     ),
@@ -90,10 +88,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    validator: (value) =>
-                        value == null || value.length < 6
-                            ? 'Password must be at least 6 characters'
-                            : null,
+                    validator: (value) => value == null || value.length < 6
+                        ? 'Password must be at least 6 characters'
+                        : null,
                     decoration: InputDecoration(
                       hintText: 'Password',
                       suffixIcon: IconButton(

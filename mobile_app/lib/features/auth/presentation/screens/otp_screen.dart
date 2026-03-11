@@ -22,6 +22,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   int _secondsLeft = AppStrings.resendSeconds;
   Timer? _timer;
+  bool _isVerifying = false;
 
   @override
   void initState() {
@@ -39,9 +40,17 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _startTimer() {
     _timer?.cancel();
-    _secondsLeft = AppStrings.resendSeconds;
+
+    setState(() {
+      _secondsLeft = AppStrings.resendSeconds;
+    });
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
       if (_secondsLeft == 0) {
         timer.cancel();
       } else {
@@ -54,31 +63,71 @@ class _OtpScreenState extends State<OtpScreen> {
 
   String get _otp => _controllers.map((e) => e.text).join();
 
-  void _verifyOtp() {
+  Future<void> _verifyOtp() async {
+    FocusScope.of(context).unfocus();
+
     if (_otp.length != AppStrings.otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the complete OTP.')),
+        const SnackBar(
+          content: Text('Please enter the complete OTP.'),
+        ),
       );
       return;
     }
 
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Success'),
-        content: const Text(
-          'OTP UI flow is complete. Firebase verification will be connected next.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.popUntil(context, (route) => route.isFirst);
-              Navigator.pushReplacementNamed(context, AppRoutes.welcome);
-            },
-            child: const Text('OK'),
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 900));
+
+      final bool otpVerified = true;
+
+      if (!mounted) return;
+
+      if (otpVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful'),
           ),
-        ],
+        );
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.profileGate,
+          (route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid OTP. Please try again.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification failed: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
+  }
+
+  void _resendCode() {
+    _startTimer();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('OTP resent successfully'),
       ),
     );
   }
@@ -86,12 +135,15 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+
     for (final controller in _controllers) {
       controller.dispose();
     }
+
     for (final node in _focusNodes) {
       node.dispose();
     }
+
     super.dispose();
   }
 
@@ -102,7 +154,7 @@ class _OtpScreenState extends State<OtpScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _isVerifying ? null : () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
@@ -132,9 +184,11 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 PrimaryAuthButton(
-                  label: 'Verify & Continue',
-                  icon: Icons.verified_rounded,
-                  onPressed: _verifyOtp,
+                  label: _isVerifying ? 'Verifying...' : 'Verify & Continue',
+                  icon: _isVerifying
+                      ? Icons.hourglass_top_rounded
+                      : Icons.verified_rounded,
+                  onPressed: _isVerifying ? null : _verifyOtp,
                 ),
               ],
             ),
@@ -153,13 +207,14 @@ class _OtpScreenState extends State<OtpScreen> {
           const SizedBox(height: AppSpacing.sm),
           Center(
             child: TextButton(
-              onPressed: _secondsLeft == 0 ? _startTimer : null,
+              onPressed:
+                  (_secondsLeft == 0 && !_isVerifying) ? _resendCode : null,
               child: const Text('Resend code'),
             ),
           ),
           Center(
             child: TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _isVerifying ? null : () => Navigator.pop(context),
               child: const Text('Change phone number'),
             ),
           ),

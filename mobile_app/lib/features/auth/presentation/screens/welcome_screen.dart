@@ -9,7 +9,8 @@ class WelcomeScreen extends StatelessWidget {
   void _showGoogleDemo(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Google sign-in UI ready. Firebase logic will be added next.'),
+        content:
+            Text('Google sign-in UI ready. Firebase logic will be added next.'),
       ),
     );
   }

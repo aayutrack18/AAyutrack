@@ -1,5 +1,5 @@
 name: aayutrack
-description: AAYUTRACK healthtech auth module
+description: AAYUTRACK healthtech mobile application
 publish_to: "none"
 
 version: 1.0.0+1
@@ -10,11 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # UI
   google_fonts: ^6.2.1
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+
+  # Icons
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^3.0.2
 
 flutter:

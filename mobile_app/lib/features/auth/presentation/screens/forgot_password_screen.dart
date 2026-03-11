@@ -23,7 +23,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Reset link UI ready. Firebase reset email will be added next.'),
+        content: Text(
+            'Reset link UI ready. Firebase reset email will be added next.'),
       ),
     );
   }
@@ -43,8 +44,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 16),
           const AuthHeader(
             title: 'Reset password',
-            subtitle:
-                'Enter your email address and we will send a reset link.',
+            subtitle: 'Enter your email address and we will send a reset link.',
           ),
           const SizedBox(height: 32),
           GlassCard(
@@ -55,10 +55,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) =>
-                        value == null || !value.contains('@')
-                            ? 'Enter a valid email address'
-                            : null,
+                    validator: (value) => value == null || !value.contains('@')
+                        ? 'Enter a valid email address'
+                        : null,
                     decoration: const InputDecoration(
                       hintText: 'Email address',
                     ),

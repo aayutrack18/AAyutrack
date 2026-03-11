@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:aayutrack/core/theme/app_theme.dart';
-import 'package:aayutrack/router/app_router.dart';
-import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/theme/app_theme.dart';
+import 'router/app_router.dart';
+import 'core/constants/app_constants.dart';
 
 void main() {
-  runApp(const AayuTrackApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(
+    const ProviderScope(
+      child: AayuTrackApp(),
+    ),
+  );
 }
 
 class AayuTrackApp extends StatelessWidget {
@@ -13,7 +21,7 @@ class AayuTrackApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: AppStrings.appName,
+      title: 'AAYUTRACK',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: AppRoutes.splash,
