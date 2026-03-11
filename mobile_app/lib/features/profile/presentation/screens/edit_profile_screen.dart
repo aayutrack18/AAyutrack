@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_profile_model.dart';
 import '../../utils/profile_validators.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/profile_avatar_picker.dart';
 import '../widgets/profile_dropdown_field.dart';
 import '../widgets/profile_text_field.dart';
 import '../widgets/section_title.dart';
@@ -33,6 +35,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   String? _selectedGender;
   String? _selectedBloodGroup;
+  String _selectedAvatarId = ProfileAvatarPicker.avatarOptions.first.id;
   bool _didPopulate = false;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
@@ -63,6 +66,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _emergencyContactNameController = TextEditingController();
     _emergencyContactPhoneController = TextEditingController();
 
+    _fullNameController.addListener(_refreshAvatarPreview);
+
     Future.microtask(() {
       ref.listenManual(profileProvider, (previous, next) {
         if (!mounted) return;
@@ -74,9 +79,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             next.errorMessage!.trim().isNotEmpty &&
             previous?.errorMessage != next.errorMessage) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next.errorMessage!),
-            ),
+            SnackBar(content: Text(next.errorMessage!)),
           );
         }
 
@@ -90,6 +93,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         }
       });
     });
+  }
+
+  void _refreshAvatarPreview() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -132,6 +141,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   void dispose() {
+    _fullNameController.removeListener(_refreshAvatarPreview);
     _fullNameController.dispose();
     _ageController.dispose();
     _phoneNumberController.dispose();
@@ -151,6 +161,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       return '$fieldName is required';
     }
     return null;
+  }
+
+  int _calculateCompletionPercent() {
+    final checks = <bool>[
+      _fullNameController.text.trim().isNotEmpty,
+      _ageController.text.trim().isNotEmpty,
+      (_selectedGender ?? '').trim().isNotEmpty,
+      _phoneNumberController.text.trim().isNotEmpty,
+      _emailController.text.trim().isNotEmpty,
+      (_selectedBloodGroup ?? '').trim().isNotEmpty,
+      _heightController.text.trim().isNotEmpty,
+      _weightController.text.trim().isNotEmpty,
+      _addressController.text.trim().isNotEmpty,
+      _allergiesController.text.trim().isNotEmpty,
+      _medicalConditionsController.text.trim().isNotEmpty,
+      _emergencyContactNameController.text.trim().isNotEmpty,
+      _emergencyContactPhoneController.text.trim().isNotEmpty,
+    ];
+
+    final completed = checks.where((item) => item).length;
+    return ((completed / checks.length) * 100).round();
   }
 
   Future<void> _updateProfile() async {
@@ -198,6 +229,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Widget _buildPageHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final completion = _calculateCompletionPercent();
 
     return Container(
       width: double.infinity,
@@ -228,9 +260,32 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           Text(
             'Update patient details and keep health records accurate for monitoring and compliance.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade700,
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: completion / 100,
+                    minHeight: 10,
+                    backgroundColor: Colors.black.withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$completion%',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -278,33 +333,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildSaveButton(BuildContext context, bool isSaving) {
+  Widget _buildUpdateButton(bool isLoading) {
     return SafeArea(
       top: false,
       child: SizedBox(
         width: double.infinity,
         height: 54,
-        child: ElevatedButton.icon(
-          onPressed: isSaving ? null : _updateProfile,
-          icon: isSaving
+        child: ElevatedButton(
+          onPressed: isLoading ? null : _updateProfile,
+          child: isLoading
               ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: Colors.white,
+                  ),
                 )
-              : const Icon(Icons.save_outlined),
-          label: Text(
-            isSaving ? 'Saving...' : 'Save Changes',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
+              : const Text(
+                  'Save Changes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         ),
       ),
     );
@@ -314,8 +366,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileProvider);
     final profile = profileState.profile;
-    final mediaQuery = MediaQuery.of(context);
-    final horizontalPadding = mediaQuery.size.width < 420 ? 16.0 : 22.0;
+    final horizontalPadding =
+        MediaQuery.of(context).size.width < 420 ? 16.0 : 22.0;
 
     if (profile == null) {
       return Scaffold(
@@ -326,62 +378,60 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x12000000),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.06),
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline_rounded,
-                    size: 52,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Profile not found',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No patient profile data is available in state.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade700,
-                          height: 1.4,
-                        ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Go Back',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_off_outlined,
+                      size: 46,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Profile not available',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No patient profile data is available in state.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Go Back'),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -413,6 +463,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildPageHeader(context),
+                        const SizedBox(height: 20),
+                        ProfileAvatarPicker(
+                          displayName: _fullNameController.text,
+                          selectedAvatarId: _selectedAvatarId,
+                          onAvatarSelected: (value) {
+                            setState(() {
+                              _selectedAvatarId = value;
+                            });
+                          },
+                          enabled: !profileState.isLoading,
+                        ),
                         const SizedBox(height: 20),
                         _buildSectionCard(
                           context: context,
@@ -540,7 +601,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               controller: _heightController,
                               validator: (value) =>
                                   ProfileValidators.validateNumber(
-                                      value, 'height'),
+                                value,
+                                'height',
+                              ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                 decimal: true,
@@ -560,7 +623,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               controller: _weightController,
                               validator: (value) =>
                                   ProfileValidators.validateNumber(
-                                      value, 'weight'),
+                                value,
+                                'weight',
+                              ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                 decimal: true,
@@ -571,8 +636,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   RegExp(r'[0-9.]'),
                                 ),
                               ],
-                              prefixIcon:
-                                  const Icon(Icons.monitor_weight_outlined),
+                              prefixIcon: const Icon(Icons.monitor_weight),
                             ),
                             const SizedBox(height: 16),
                             ProfileTextField(
@@ -587,39 +651,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             const SizedBox(height: 16),
                             ProfileTextField(
                               label: 'Medical Conditions',
-                              hintText: 'Enter medical conditions if any',
+                              hintText: 'Enter known medical conditions',
                               controller: _medicalConditionsController,
-                              maxLines: 3,
+                              maxLines: 2,
                               textInputAction: TextInputAction.newline,
                               prefixIcon: const Icon(
-                                Icons.medical_information_outlined,
-                              ),
+                                  Icons.medical_information_outlined),
                             ),
                           ],
                         ),
                         _buildSectionCard(
                           context: context,
                           title: 'Emergency Contact',
-                          subtitle: 'Emergency support details',
+                          subtitle: 'Important contact during emergencies',
                           icon: Icons.emergency_outlined,
                           children: [
                             ProfileTextField(
-                              label: 'Emergency Contact Name',
-                              hintText: 'Enter contact person name',
+                              label: 'Contact Name',
+                              hintText: 'Enter emergency contact name',
                               controller: _emergencyContactNameController,
                               textInputAction: TextInputAction.next,
-                              prefixIcon: const Icon(Icons.badge_outlined),
+                              prefixIcon: const Icon(Icons.person_2_outlined),
                             ),
                             const SizedBox(height: 16),
                             ProfileTextField(
-                              label: 'Emergency Contact Phone',
-                              hintText: 'Enter 10-digit phone number',
+                              label: 'Contact Phone',
+                              hintText: 'Enter emergency phone number',
                               controller: _emergencyContactPhoneController,
-                              validator: (value) =>
-                                  ProfileValidators.validatePhone(
-                                value,
-                                required: false,
-                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                return ProfileValidators.validatePhone(value);
+                              },
                               keyboardType: TextInputType.phone,
                               textInputAction: TextInputAction.done,
                               inputFormatters: [
@@ -627,11 +691,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 LengthLimitingTextInputFormatter(10),
                               ],
                               prefixIcon:
-                                  const Icon(Icons.contact_phone_outlined),
+                                  const Icon(Icons.local_phone_outlined),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -643,7 +706,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     horizontalPadding,
                     16,
                   ),
-                  child: _buildSaveButton(context, profileState.isLoading),
+                  child: _buildUpdateButton(profileState.isLoading),
                 ),
               ],
             ),

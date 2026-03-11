@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_profile_model.dart';
 import '../../utils/profile_validators.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/profile_avatar_picker.dart';
 import '../widgets/profile_dropdown_field.dart';
 import '../widgets/profile_text_field.dart';
 import '../widgets/section_title.dart';
@@ -39,6 +41,7 @@ class _PatientOnboardingScreenState
 
   String? _selectedGender;
   String? _selectedBloodGroup;
+  String _selectedAvatarId = ProfileAvatarPicker.avatarOptions.first.id;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
   final List<String> _bloodGroupOptions = [
@@ -56,6 +59,8 @@ class _PatientOnboardingScreenState
   void initState() {
     super.initState();
 
+    _fullNameController.addListener(_refreshAvatarPreview);
+
     Future.microtask(() {
       ref.listenManual(profileProvider, (previous, next) {
         if (!mounted) return;
@@ -67,9 +72,7 @@ class _PatientOnboardingScreenState
             next.errorMessage!.trim().isNotEmpty &&
             previous?.errorMessage != next.errorMessage) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next.errorMessage!),
-            ),
+            SnackBar(content: Text(next.errorMessage!)),
           );
         }
 
@@ -89,8 +92,15 @@ class _PatientOnboardingScreenState
     });
   }
 
+  void _refreshAvatarPreview() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    _fullNameController.removeListener(_refreshAvatarPreview);
     _fullNameController.dispose();
     _ageController.dispose();
     _phoneNumberController.dispose();
@@ -146,8 +156,30 @@ class _PatientOnboardingScreenState
     return null;
   }
 
+  int _calculateCompletionPercent() {
+    final checks = <bool>[
+      _fullNameController.text.trim().isNotEmpty,
+      _ageController.text.trim().isNotEmpty,
+      (_selectedGender ?? '').trim().isNotEmpty,
+      _phoneNumberController.text.trim().isNotEmpty,
+      _emailController.text.trim().isNotEmpty,
+      (_selectedBloodGroup ?? '').trim().isNotEmpty,
+      _heightController.text.trim().isNotEmpty,
+      _weightController.text.trim().isNotEmpty,
+      _addressController.text.trim().isNotEmpty,
+      _allergiesController.text.trim().isNotEmpty,
+      _medicalConditionsController.text.trim().isNotEmpty,
+      _emergencyContactNameController.text.trim().isNotEmpty,
+      _emergencyContactPhoneController.text.trim().isNotEmpty,
+    ];
+
+    final completed = checks.where((item) => item).length;
+    return ((completed / checks.length) * 100).round();
+  }
+
   Widget _buildPageHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final completion = _calculateCompletionPercent();
 
     return Container(
       width: double.infinity,
@@ -176,11 +208,34 @@ class _PatientOnboardingScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Fill in your basic health and contact information to continue using AAYUTRACK.',
+            'Fill in patient details to continue using AAYUTRACK. This frontend stays ready for future SQLite and Firestore integration.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade700,
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: completion / 100,
+                    minHeight: 10,
+                    backgroundColor: Colors.black.withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$completion%',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -245,7 +300,10 @@ class _PatientOnboardingScreenState
               ? const SizedBox(
                   height: 22,
                   width: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: Colors.white,
+                  ),
                 )
               : const Text(
                   'Complete Profile',
@@ -289,6 +347,17 @@ class _PatientOnboardingScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildPageHeader(context),
+                        const SizedBox(height: 20),
+                        ProfileAvatarPicker(
+                          displayName: _fullNameController.text,
+                          selectedAvatarId: _selectedAvatarId,
+                          onAvatarSelected: (value) {
+                            setState(() {
+                              _selectedAvatarId = value;
+                            });
+                          },
+                          enabled: !profileState.isLoading,
+                        ),
                         const SizedBox(height: 20),
                         _buildSectionCard(
                           context: context,
@@ -416,7 +485,9 @@ class _PatientOnboardingScreenState
                               controller: _heightController,
                               validator: (value) =>
                                   ProfileValidators.validateNumber(
-                                      value, 'height'),
+                                value,
+                                'height',
+                              ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                 decimal: true,
@@ -436,7 +507,9 @@ class _PatientOnboardingScreenState
                               controller: _weightController,
                               validator: (value) =>
                                   ProfileValidators.validateNumber(
-                                      value, 'weight'),
+                                value,
+                                'weight',
+                              ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                 decimal: true,
@@ -447,8 +520,7 @@ class _PatientOnboardingScreenState
                                   RegExp(r'[0-9.]'),
                                 ),
                               ],
-                              prefixIcon:
-                                  const Icon(Icons.monitor_weight_outlined),
+                              prefixIcon: const Icon(Icons.monitor_weight),
                             ),
                             const SizedBox(height: 16),
                             ProfileTextField(
@@ -463,39 +535,39 @@ class _PatientOnboardingScreenState
                             const SizedBox(height: 16),
                             ProfileTextField(
                               label: 'Medical Conditions',
-                              hintText: 'Enter medical conditions if any',
+                              hintText: 'Enter known medical conditions',
                               controller: _medicalConditionsController,
-                              maxLines: 3,
+                              maxLines: 2,
                               textInputAction: TextInputAction.newline,
                               prefixIcon: const Icon(
-                                Icons.medical_information_outlined,
-                              ),
+                                  Icons.medical_information_outlined),
                             ),
                           ],
                         ),
                         _buildSectionCard(
                           context: context,
                           title: 'Emergency Contact',
-                          subtitle: 'Person to contact during emergencies',
+                          subtitle: 'Person to contact in urgent situations',
                           icon: Icons.emergency_outlined,
                           children: [
                             ProfileTextField(
-                              label: 'Emergency Contact Name',
-                              hintText: 'Enter contact person name',
+                              label: 'Contact Name',
+                              hintText: 'Enter emergency contact name',
                               controller: _emergencyContactNameController,
                               textInputAction: TextInputAction.next,
-                              prefixIcon: const Icon(Icons.badge_outlined),
+                              prefixIcon: const Icon(Icons.person_2_outlined),
                             ),
                             const SizedBox(height: 16),
                             ProfileTextField(
-                              label: 'Emergency Contact Phone',
-                              hintText: 'Enter 10-digit phone number',
+                              label: 'Contact Phone',
+                              hintText: 'Enter emergency phone number',
                               controller: _emergencyContactPhoneController,
-                              validator: (value) =>
-                                  ProfileValidators.validatePhone(
-                                value,
-                                required: false,
-                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                return ProfileValidators.validatePhone(value);
+                              },
                               keyboardType: TextInputType.phone,
                               textInputAction: TextInputAction.done,
                               inputFormatters: [
@@ -503,11 +575,10 @@ class _PatientOnboardingScreenState
                                 LengthLimitingTextInputFormatter(10),
                               ],
                               prefixIcon:
-                                  const Icon(Icons.contact_phone_outlined),
+                                  const Icon(Icons.local_phone_outlined),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
