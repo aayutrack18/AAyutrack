@@ -6,25 +6,25 @@ import '../models/patient_profile_model.dart';
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileLocalDataSource localDataSource;
 
-  ProfileRepositoryImpl({
+  const ProfileRepositoryImpl({
     required this.localDataSource,
   });
 
   @override
   Future<PatientProfile?> getProfile() async {
-    final profileModel = await localDataSource.getProfile();
-    return profileModel;
+    final model = await localDataSource.getProfile();
+    return _toEntity(model);
   }
 
   @override
   Future<void> saveProfile(PatientProfile profile) async {
-    final model = PatientProfileModel.fromEntity(profile);
+    final model = _toModel(profile);
     await localDataSource.saveProfile(model);
   }
 
   @override
   Future<void> updateProfile(PatientProfile profile) async {
-    final model = PatientProfileModel.fromEntity(profile);
+    final model = _toModel(profile);
     await localDataSource.updateProfile(model);
   }
 
@@ -41,5 +41,36 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> markProfileAsPendingSync() async {
     await localDataSource.markProfileAsPendingSync();
+  }
+
+  PatientProfile? _toEntity(PatientProfileModel? model) {
+    return model;
+  }
+
+  PatientProfileModel _toModel(PatientProfile profile) {
+    if (profile is PatientProfileModel) {
+      return profile;
+    }
+
+    return PatientProfileModel(
+      profileId: profile.profileId,
+      userId: profile.userId,
+      fullName: profile.fullName,
+      age: profile.age,
+      gender: profile.gender,
+      phoneNumber: profile.phoneNumber,
+      email: profile.email,
+      bloodGroup: profile.bloodGroup,
+      heightCm: profile.heightCm,
+      weightKg: profile.weightKg,
+      address: profile.address,
+      allergies: profile.allergies,
+      medicalConditions: profile.medicalConditions,
+      emergencyContactName: profile.emergencyContactName,
+      emergencyContactPhone: profile.emergencyContactPhone,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+      isSynced: profile.isSynced,
+    );
   }
 }

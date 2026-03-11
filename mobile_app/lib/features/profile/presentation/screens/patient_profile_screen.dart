@@ -17,6 +17,8 @@ class PatientProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
+  bool _isOpeningEdit = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,27 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
 
   Future<void> _reloadProfile() async {
     await ref.read(profileProvider.notifier).loadProfile();
+  }
+
+  Future<void> _openEditProfile() async {
+    if (_isOpeningEdit) return;
+
+    setState(() {
+      _isOpeningEdit = true;
+    });
+
+    try {
+      await Navigator.pushNamed(context, AppRoutes.editProfile);
+
+      if (!mounted) return;
+      await ref.read(profileProvider.notifier).loadProfile();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpeningEdit = false;
+        });
+      }
+    }
   }
 
   @override
@@ -66,20 +89,29 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
 
     return _PatientProfileContent(
       profile: profileState.profile!,
+      isRefreshing: profileState.isLoading,
+      isOpeningEdit: _isOpeningEdit,
       onRefresh: _reloadProfile,
+      onEditProfile: _openEditProfile,
       errorMessage: profileState.errorMessage,
     );
   }
 }
 
-class _PatientProfileContent extends ConsumerWidget {
+class _PatientProfileContent extends StatelessWidget {
   final PatientProfile profile;
+  final bool isRefreshing;
+  final bool isOpeningEdit;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onEditProfile;
   final String? errorMessage;
 
   const _PatientProfileContent({
     required this.profile,
+    required this.isRefreshing,
+    required this.isOpeningEdit,
     required this.onRefresh,
+    required this.onEditProfile,
     this.errorMessage,
   });
 
@@ -134,9 +166,8 @@ class _PatientProfileContent extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenWidth = mediaQuery.size.width;
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding =
         screenWidth < AppSizes.maxContentWidth ? 16.0 : 22.0;
     final completionPercent = _calculateCompletionPercent(profile);
@@ -162,8 +193,15 @@ class _PatientProfileContent extends ConsumerWidget {
                     profile: profile,
                     initials: _getInitials(profile.fullName),
                     completionPercent: completionPercent,
+                    isRefreshing: isRefreshing,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSpacing.md),
+                  _QuickActionsCard(
+                    isEditLoading: isOpeningEdit,
+                    onEditProfile: onEditProfile,
+                    onRefresh: onRefresh,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   ProfileInfoCard(
                     title: 'Personal Information',
                     icon: Icons.person_outline_rounded,
@@ -282,19 +320,20 @@ class _PatientProfileContent extends ConsumerWidget {
                 width: double.infinity,
                 height: AppSizes.buttonHeight,
                 child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await Navigator.pushNamed(
-                      context,
-                      AppRoutes.editProfile,
-                    );
-
-                    if (!context.mounted) return;
-                    await ref.read(profileProvider.notifier).loadProfile();
-                  },
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text(
-                    'Edit Profile',
-                    style: TextStyle(
+                  onPressed: isOpeningEdit ? null : onEditProfile,
+                  icon: isOpeningEdit
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.edit_outlined),
+                  label: Text(
+                    isOpeningEdit ? 'Opening Editor...' : 'Edit Profile',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -318,11 +357,13 @@ class _ProfileHeaderCard extends StatelessWidget {
   final PatientProfile profile;
   final String initials;
   final int completionPercent;
+  final bool isRefreshing;
 
   const _ProfileHeaderCard({
     required this.profile,
     required this.initials,
     required this.completionPercent,
+    required this.isRefreshing,
   });
 
   Color _statusColor(bool isSynced) {
@@ -342,7 +383,7 @@ class _ProfileHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         color: theme.colorScheme.primary.withValues(alpha: 0.08),
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.12),
@@ -351,6 +392,7 @@ class _ProfileHeaderCard extends StatelessWidget {
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
                 radius: 34,
@@ -375,6 +417,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -382,15 +425,26 @@ class _ProfileHeaderCard extends StatelessWidget {
                       '${profile.age} years • ${profile.gender} • ${profile.bloodGroup}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
+                        height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    _StatusChip(
-                      label: _statusText(profile.isSynced),
-                      color: statusColor,
-                      icon: profile.isSynced
-                          ? Icons.cloud_done_outlined
-                          : Icons.sync_problem_outlined,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _StatusChip(
+                          label: _statusText(profile.isSynced),
+                          color: statusColor,
+                          icon: profile.isSynced
+                              ? Icons.cloud_done_outlined
+                              : Icons.sync_problem_outlined,
+                        ),
+                        if (isRefreshing)
+                          const _MiniLoadingChip(
+                            label: 'Refreshing',
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -401,6 +455,57 @@ class _ProfileHeaderCard extends StatelessWidget {
           _CompletionCard(percent: completionPercent),
         ],
       ),
+    );
+  }
+}
+
+class _QuickActionsCard extends StatelessWidget {
+  final bool isEditLoading;
+  final Future<void> Function() onEditProfile;
+  final Future<void> Function() onRefresh;
+
+  const _QuickActionsCard({
+    required this.isEditLoading,
+    required this.onEditProfile,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ProfileInfoCard(
+      title: 'Quick Actions',
+      icon: Icons.bolt_outlined,
+      padding: const EdgeInsets.all(14),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isEditLoading ? null : onRefresh,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Refresh'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: isEditLoading ? null : onEditProfile,
+                icon: isEditLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.edit_outlined),
+                label: Text(isEditLoading ? 'Opening...' : 'Edit'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -428,8 +533,8 @@ class _CompletionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: Colors.black.withValues(alpha: 0.05),
         ),
@@ -521,6 +626,49 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+class _MiniLoadingChip extends StatelessWidget {
+  final String label;
+
+  const _MiniLoadingChip({
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            height: 14,
+            width: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileDetailRow extends StatelessWidget {
   final String label;
   final String value;
@@ -553,32 +701,67 @@ class _ProfileDetailRow extends StatelessWidget {
                 ),
               ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 112,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w600,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 300;
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: valueColor,
+                    fontWeight:
+                        _isNotProvided ? FontWeight.w500 : FontWeight.w600,
+                    fontStyle:
+                        _isNotProvided ? FontStyle.italic : FontStyle.normal,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 112,
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: valueColor,
-                fontWeight: _isNotProvided ? FontWeight.w500 : FontWeight.w600,
-                fontStyle: _isNotProvided ? FontStyle.italic : FontStyle.normal,
-                height: 1.4,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: valueColor,
+                    fontWeight:
+                        _isNotProvided ? FontWeight.w500 : FontWeight.w600,
+                    fontStyle:
+                        _isNotProvided ? FontStyle.italic : FontStyle.normal,
+                    height: 1.4,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -598,13 +781,15 @@ class _ProfileLoadingView extends StatelessWidget {
           EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 24),
       child: Column(
         children: const [
-          _SkeletonCard(height: 170),
-          SizedBox(height: 18),
-          _SkeletonCard(height: 180),
+          _SkeletonCard(height: 190),
           SizedBox(height: 16),
-          _SkeletonCard(height: 180),
+          _SkeletonCard(height: 92),
           SizedBox(height: 16),
-          _SkeletonCard(height: 150),
+          _SkeletonCard(height: 190),
+          SizedBox(height: 16),
+          _SkeletonCard(height: 190),
+          SizedBox(height: 16),
+          _SkeletonCard(height: 160),
         ],
       ),
     );
