@@ -44,6 +44,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   PatientProfile? _toEntity(PatientProfileModel? model) {
+    if (model == null) return null;
     return model;
   }
 

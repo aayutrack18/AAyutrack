@@ -1,13 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/database/app_database.dart' as db;
+import '../../../../core/sync/profile_sync_service.dart';
+import '../../../../core/sync/sync_providers.dart';
 import '../../data/datasources/profile_local_datasource.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/entities/patient_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'profile_state.dart';
 
+final databaseProvider = Provider<db.AppDatabase>((ref) {
+  return db.AppDatabase();
+});
+
 final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
-  return ProfileLocalDataSource();
+  final database = ref.watch(databaseProvider);
+  return ProfileLocalDataSource(database);
 });
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
@@ -18,16 +26,23 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   );
 });
 
+final profileSyncProvider = Provider<ProfileSyncService>((ref) {
+  return ref.watch(profileSyncServiceProvider);
+});
+
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
   final repository = ref.watch(profileRepositoryProvider);
-  return ProfileNotifier(repository);
+  final syncService = ref.watch(profileSyncProvider);
+  return ProfileNotifier(repository, syncService);
 });
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
   final ProfileRepository _repository;
+  final ProfileSyncService _syncService;
 
-  ProfileNotifier(this._repository) : super(ProfileState.initial());
+  ProfileNotifier(this._repository, this._syncService)
+      : super(ProfileState.initial());
 
   bool _isProfileCompleted(PatientProfile? profile) {
     if (profile == null) return false;
@@ -40,114 +55,186 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         profile.bloodGroup.trim().isNotEmpty;
   }
 
-  void _setLoading({bool clearError = true}) {
+  Future<void> loadProfile() async {
     state = state.copyWith(
       isLoading: true,
-      clearError: clearError,
-    );
-  }
-
-  void _setLoadedProfile(PatientProfile? profile) {
-    state = state.copyWith(
-      isLoading: false,
-      profile: profile,
-      isProfileCompleted: _isProfileCompleted(profile),
       clearError: true,
-      clearProfile: profile == null,
     );
-  }
-
-  void _setError(String message) {
-    state = state.copyWith(
-      isLoading: false,
-      errorMessage: message,
-    );
-  }
-
-  Future<PatientProfile?> _fetchLatestProfile() async {
-    return _repository.getProfile();
-  }
-
-  Future<void> loadProfile() async {
-    _setLoading();
 
     try {
-      final profile = await _fetchLatestProfile();
-      _setLoadedProfile(profile);
+      final profile = await _repository.getProfile();
+
+      // DEBUG: Shows local SQLite profile in VS Code terminal
+      print('========== LOCAL SQLITE PROFILE ==========');
+      print(profile);
+      print('=========================================');
+
+      state = state.copyWith(
+        isLoading: false,
+        profile: profile,
+        isProfileCompleted: _isProfileCompleted(profile),
+        clearError: true,
+      );
     } catch (e) {
-      _setError('Failed to load profile: $e');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
   Future<void> createProfile(PatientProfile profile) async {
-    _setLoading();
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+    );
 
     try {
       await _repository.saveProfile(profile);
-      final savedProfile = await _fetchLatestProfile();
-      _setLoadedProfile(savedProfile);
+      await _repository.markProfileAsPendingSync();
+      await _syncService.syncPendingProfileItems();
+
+      final latestProfile = await _repository.getProfile();
+
+      print('========== PROFILE CREATED / SAVED ==========');
+      print(latestProfile);
+      print('============================================');
+
+      state = state.copyWith(
+        isLoading: false,
+        profile: latestProfile,
+        isProfileCompleted: _isProfileCompleted(latestProfile),
+        clearError: true,
+      );
     } catch (e) {
-      _setError('Failed to create profile: $e');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  Future<void> updateProfile(PatientProfile updatedProfile) async {
-    _setLoading();
+  Future<void> updateProfile(PatientProfile profile) async {
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+    );
 
     try {
-      await _repository.updateProfile(updatedProfile);
+      await _repository.updateProfile(profile);
       await _repository.markProfileAsPendingSync();
+      await _syncService.syncPendingProfileItems();
 
-      final latestProfile = await _fetchLatestProfile();
-      _setLoadedProfile(latestProfile);
+      final latestProfile = await _repository.getProfile();
+
+      print('========== PROFILE UPDATED ==========');
+      print(latestProfile);
+      print('====================================');
+
+      state = state.copyWith(
+        isLoading: false,
+        profile: latestProfile,
+        isProfileCompleted: _isProfileCompleted(latestProfile),
+        clearError: true,
+      );
     } catch (e) {
-      _setError('Failed to update profile: $e');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
   Future<void> deleteProfile() async {
-    _setLoading();
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+    );
 
     try {
       await _repository.deleteProfile();
+      await _syncService.syncPendingProfileItems();
       state = ProfileState.initial();
     } catch (e) {
-      _setError('Failed to delete profile: $e');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
   Future<void> markAsSynced() async {
     try {
       await _repository.markProfileAsSynced();
-      final latestProfile = await _fetchLatestProfile();
-      _setLoadedProfile(latestProfile);
+      final latestProfile = await _repository.getProfile();
+
+      state = state.copyWith(
+        profile: latestProfile,
+        isProfileCompleted: _isProfileCompleted(latestProfile),
+        clearError: true,
+      );
     } catch (e) {
-      _setError('Failed to update sync status: $e');
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
   }
 
   Future<void> markAsPendingSync() async {
     try {
       await _repository.markProfileAsPendingSync();
-      final latestProfile = await _fetchLatestProfile();
-      _setLoadedProfile(latestProfile);
-    } catch (e) {
-      _setError('Failed to update sync status: $e');
-    }
-  }
-
-  Future<void> refreshProfileSilently() async {
-    try {
-      final latestProfile = await _fetchLatestProfile();
+      final latestProfile = await _repository.getProfile();
 
       state = state.copyWith(
         profile: latestProfile,
         isProfileCompleted: _isProfileCompleted(latestProfile),
         clearError: true,
-        clearProfile: latestProfile == null,
       );
     } catch (e) {
-      _setError('Failed to refresh profile: $e');
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  Future<void> refreshProfileSilently() async {
+    try {
+      final latestProfile = await _repository.getProfile();
+
+      print('========== PROFILE REFRESH ==========');
+      print(latestProfile);
+      print('====================================');
+
+      state = state.copyWith(
+        profile: latestProfile,
+        isProfileCompleted: _isProfileCompleted(latestProfile),
+        clearError: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  Future<void> syncNow() async {
+    try {
+      await _syncService.syncPendingProfileItems();
+      final latestProfile = await _repository.getProfile();
+
+      print('========== PROFILE SYNC NOW ==========');
+      print(latestProfile);
+      print('=====================================');
+
+      state = state.copyWith(
+        profile: latestProfile,
+        isProfileCompleted: _isProfileCompleted(latestProfile),
+        clearError: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
   }
 

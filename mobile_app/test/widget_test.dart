@@ -6,10 +6,10 @@ void main() {
   testWidgets('App builds successfully', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: AayuTrackApp(),
+        child: MyApp(),
       ),
     );
 
-    expect(find.byType(AayuTrackApp), findsOneWidget);
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }
