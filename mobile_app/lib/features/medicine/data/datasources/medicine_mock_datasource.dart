@@ -1,4 +1,4 @@
-import '../../domain/entities/medicine.dart';
+import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
 
 class MedicineMockDataSource {
   final List<Medicine> _medicines = [

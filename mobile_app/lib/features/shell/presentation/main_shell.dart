@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../compliance/presentation/providers/compliance_provider.dart';
-import '../../dashboard/presentation/screens/dashboard_screen.dart';
-import '../../health_logs/presentation/screens/health_logs_dashboard_screen.dart';
-import '../../medicine/presentation/screens/medicine_list_screen.dart';
-import '../../profile/presentation/screens/patient_profile_screen.dart';
-import '../../reminders/presentation/screens/reminder_list_screen.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
+import 'package:aayutrack/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/health_logs_dashboard_screen.dart';
+import 'package:aayutrack/features/medicine/presentation/screens/medicine_list_screen.dart';
+import 'package:aayutrack/features/profile/presentation/screens/patient_profile_screen.dart';
+import 'package:aayutrack/features/reminders/presentation/screens/reminder_list_screen.dart';
 
 final _shellIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -19,7 +18,7 @@ class MainShell extends ConsumerWidget {
     final index = ref.watch(_shellIndexProvider);
     final complianceState = ref.watch(complianceProvider);
 
-    final screens = const [
+    const screens = [
       DashboardScreen(),
       MedicineListScreen(),
       ReminderListScreen(),
@@ -151,9 +150,7 @@ class _NavItem extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 22,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textMuted,
+                    color: isSelected ? AppColors.primary : AppColors.textMuted,
                   ),
                 ),
                 if (badgeCount > 0)
@@ -169,9 +166,10 @@ class _NavItem extends StatelessWidget {
                       child: Text(
                         '$badgeCount',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700),
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

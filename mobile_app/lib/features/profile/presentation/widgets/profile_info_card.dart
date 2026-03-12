@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 
 class ProfileInfoCard extends StatelessWidget {
   final String title;
@@ -30,7 +30,7 @@ class ProfileInfoCard extends StatelessWidget {
     final theme = Theme.of(context);
     final resolvedPadding = padding ?? const EdgeInsets.all(16);
     final resolvedIconBackgroundColor = iconBackgroundColor ??
-        theme.colorScheme.primary.withValues(alpha: 0.10);
+        theme.colorScheme.primary.withOpacity(0.10);
     final resolvedIconColor = iconColor ?? theme.colorScheme.primary;
 
     return Container(
@@ -41,7 +41,7 @@ class ProfileInfoCard extends StatelessWidget {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.05),
+          color: Colors.black.withOpacity(0.05),
         ),
         boxShadow: const [
           BoxShadow(

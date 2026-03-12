@@ -1,178 +1,229 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../domain/entities/health_log.dart';
-import '../providers/health_log_provider.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/core/widgets/app_widgets.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/edit_health_log_screen.dart';
 
 class HealthLogHistoryScreen extends ConsumerStatefulWidget {
   const HealthLogHistoryScreen({super.key});
 
   @override
-  ConsumerState<HealthLogHistoryScreen> createState() =>
-      _HealthLogHistoryScreenState();
+  ConsumerState<HealthLogHistoryScreen> createState() => _HealthLogHistoryScreenState();
 }
 
-class _HealthLogHistoryScreenState
-    extends ConsumerState<HealthLogHistoryScreen> {
-  MetricType? _filter;
+class _HealthLogHistoryScreenState extends ConsumerState<HealthLogHistoryScreen> {
+  MetricType? _filterType;
 
-  Color _metricColor(MetricType type) {
-    switch (type) {
-      case MetricType.bloodPressure:
-        return const Color(0xFFDC2626);
-      case MetricType.bloodSugar:
-        return const Color(0xFFF59E0B);
-      case MetricType.heartRate:
-        return const Color(0xFFEC4899);
-      case MetricType.weight:
-        return const Color(0xFF7C3AED);
-      case MetricType.oxygen:
-        return const Color(0xFF14B8A6);
-      case MetricType.temperature:
-        return const Color(0xFF6366F1);
-      case MetricType.mood:
-        return const Color(0xFF16A34A);
+  Color _metricColor(MetricType t) {
+    switch (t) {
+      case MetricType.bloodPressure: return const Color(0xFFDC2626);
+      case MetricType.bloodSugar: return const Color(0xFFF59E0B);
+      case MetricType.heartRate: return const Color(0xFFEC4899);
+      case MetricType.weight: return const Color(0xFF7C3AED);
+      case MetricType.oxygen: return const Color(0xFF14B8A6);
+      case MetricType.temperature: return const Color(0xFF6366F1);
+      case MetricType.mood: return const Color(0xFF16A34A);
     }
   }
 
-  IconData _metricIcon(MetricType type) {
-    switch (type) {
-      case MetricType.bloodPressure:
-        return Icons.bloodtype_rounded;
-      case MetricType.bloodSugar:
-        return Icons.water_drop_rounded;
-      case MetricType.heartRate:
-        return Icons.favorite_rounded;
-      case MetricType.weight:
-        return Icons.monitor_weight_outlined;
-      case MetricType.oxygen:
-        return Icons.air_rounded;
-      case MetricType.temperature:
-        return Icons.thermostat_rounded;
-      case MetricType.mood:
-        return Icons.sentiment_satisfied_rounded;
+  IconData _metricIcon(MetricType t) {
+    switch (t) {
+      case MetricType.bloodPressure: return Icons.bloodtype_rounded;
+      case MetricType.bloodSugar: return Icons.water_drop_rounded;
+      case MetricType.heartRate: return Icons.favorite_rounded;
+      case MetricType.weight: return Icons.monitor_weight_outlined;
+      case MetricType.oxygen: return Icons.air_rounded;
+      case MetricType.temperature: return Icons.thermostat_rounded;
+      case MetricType.mood: return Icons.sentiment_satisfied_rounded;
     }
+  }
+
+  String _formatDt(DateTime dt) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $h:$m';
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(healthLogProvider);
-    final logs = _filter == null ? state.logs : state.logsOfType(_filter!);
+    final logs = _filterType != null
+        ? state.logsOfType(_filterType!)
+        : state.logs;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          'History',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Health History')),
       body: Column(
         children: [
-          _buildFilterChips(),
+          // Filter chips
+          SizedBox(
+            height: 52,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              children: [
+                _FilterChip(
+                  label: 'All',
+                  isSelected: _filterType == null,
+                  color: AppColors.primary,
+                  onTap: () => setState(() => _filterType = null),
+                ),
+                const SizedBox(width: 8),
+                ...MetricType.values.map((t) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _FilterChip(
+                        label: t.label.split(' ').first,
+                        isSelected: _filterType == t,
+                        color: _metricColor(t),
+                        onTap: () =>
+                            setState(() => _filterType = _filterType == t ? null : t),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+          // Stats bar
+          if (logs.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _statItem('Total', '${logs.length}'),
+                    _statItem('This Week',
+                        '${logs.where((l) => DateTime.now().difference(l.recordedAt).inDays < 7).length}'),
+                    _statItem('Today',
+                        '${logs.where((l) => DateTime.now().difference(l.recordedAt).inDays == 0).length}'),
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: logs.isEmpty
                 ? const EmptyState(
-                    icon: Icons.history_rounded,
-                    title: 'No Entries',
-                    message: 'No health logs for the selected filter.',
-                  )
+                    icon: Icons.monitor_heart_outlined,
+                    title: 'No Records Found',
+                    message: 'No health logs match your current filter.')
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                     itemCount: logs.length,
-                    itemBuilder: (_, i) {
+                    itemBuilder: (ctx, i) {
                       final log = logs[i];
                       final color = _metricColor(log.type);
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Dismissible(
-                          key: Key(log.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            decoration: BoxDecoration(
-                              color: AppColors.danger.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.delete_outline_rounded,
-                              color: AppColors.danger,
-                            ),
+                      return Dismissible(
+                        key: Key(log.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
                           ),
-                          onDismissed: (_) {
-                            ref
-                                .read(healthLogProvider.notifier)
-                                .deleteLog(log.id);
-                          },
-                          child: AppCard(
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: color.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    _metricIcon(log.type),
-                                    color: color,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        log.type.label,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatDate(log.recordedAt),
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textMuted,
-                                        ),
-                                      ),
-                                      if (log.notes.isNotEmpty)
-                                        Text(
-                                          log.notes,
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textMuted,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '${log.displayValue} ${log.type.unit}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: color,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
+                          child: const Icon(Icons.delete_outline,
+                              color: Colors.white, size: 24),
+                        ),
+                        confirmDismiss: (_) => showConfirmationSheet(
+                          ctx,
+                          title: 'Delete Reading',
+                          message: 'Remove this ${log.type.label} reading?',
+                          confirmLabel: 'Delete',
+                          isDangerous: true,
+                        ),
+                        onDismissed: (_) {
+                          ref.read(healthLogProvider.notifier).deleteLog(log.id);
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(
+                              content: const Text('Reading deleted'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.danger,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: AppCard(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            child: Row(children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_metricIcon(log.type),
+                                    color: color, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(log.type.label,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: AppColors.textPrimary)),
+                                  Text(_formatDt(log.recordedAt),
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.textMuted)),
+                                  if (log.notes.isNotEmpty)
+                                    Text(log.notes,
+                                        style: const TextStyle(
+                                            fontSize: 11, color: AppColors.textMuted),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
+                                ],
+                              )),
+                              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                Text(log.displayValue,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                        color: color)),
+                                if (log.type.unit.isNotEmpty)
+                                  Text(log.type.unit,
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.textMuted)),
+                                const SizedBox(height: 6),
+                                Row(children: [
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(ctx,
+                                      MaterialPageRoute(
+                                          builder: (_) => EditHealthLogScreen(log: log))),
+                                    child: const Icon(Icons.edit_outlined,
+                                        size: 15, color: AppColors.textMuted),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final confirm = await showConfirmationSheet(ctx,
+                                        title: 'Delete Reading',
+                                        message: 'Remove this ${log.type.label} reading?',
+                                        confirmLabel: 'Delete',
+                                        isDangerous: true,
+                                      );
+                                      if (confirm == true) {
+                                        ref.read(healthLogProvider.notifier).deleteLog(log.id);
+                                      }
+                                    },
+                                    child: const Icon(Icons.delete_outline,
+                                        size: 15, color: AppColors.danger),
+                                  ),
+                                ]),
+                              ]),
+                            ]),
                           ),
                         ),
                       );
@@ -184,50 +235,29 @@ class _HealthLogHistoryScreenState
     );
   }
 
-  Widget _buildFilterChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
-        children: [
-          _FilterChip(
-            label: 'All',
-            isSelected: _filter == null,
-            onTap: () => setState(() => _filter = null),
-          ),
-          ...MetricType.values.map(
-            (type) => _FilterChip(
-              label: type.label,
-              isSelected: _filter == type,
-              onTap: () => setState(
-                () => _filter = _filter == type ? null : type,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime dt) {
-    final now = DateTime.now();
-
-    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
-      return 'Today ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    }
-
-    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  Widget _statItem(String label, String value) {
+    return Column(children: [
+      Text(value,
+          style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: AppColors.textPrimary)),
+      Text(label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+    ]);
   }
 }
 
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
+  final Color color;
   final VoidCallback onTap;
 
   const _FilterChip({
     required this.label,
     required this.isSelected,
+    required this.color,
     required this.onTap,
   });
 
@@ -235,23 +265,20 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+          color: isSelected ? color : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-          ),
+          border: Border.all(color: isSelected ? color : AppColors.border),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textMuted,
-          ),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.textMuted),
         ),
       ),
     );

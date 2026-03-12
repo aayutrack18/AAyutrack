@@ -5,20 +5,16 @@ import 'package:aayutrack/core/theme/app_theme.dart';
 class AuthScaffold extends StatelessWidget {
   final Widget child;
 
-  const AuthScaffold({
-    super.key,
-    required this.child,
-  });
+  const AuthScaffold({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppSizes.maxContentWidth,
-            ),
+            constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xl,
@@ -36,10 +32,7 @@ class AuthScaffold extends StatelessWidget {
 class AppLogo extends StatelessWidget {
   final double size;
 
-  const AppLogo({
-    super.key,
-    this.size = 72,
-  });
+  const AppLogo({super.key, this.size = 72});
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +54,10 @@ class AppLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
+      child: Icon(
         Icons.favorite_rounded,
         color: Colors.white,
-        size: 34,
+        size: size * 0.4,
       ),
     );
   }
@@ -94,8 +87,9 @@ class AuthHeader extends StatelessWidget {
           title,
           textAlign: align,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 30,
+                fontSize: 26,
                 fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
               ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -104,7 +98,7 @@ class AuthHeader extends StatelessWidget {
           textAlign: align,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppColors.textMuted,
-                height: 1.45,
+                height: 1.5,
               ),
         ),
       ],
@@ -115,10 +109,7 @@ class AuthHeader extends StatelessWidget {
 class TrustNote extends StatelessWidget {
   final String text;
 
-  const TrustNote({
-    super.key,
-    required this.text,
-  });
+  const TrustNote({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -134,16 +125,13 @@ class TrustNote extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.verified_user_outlined,
-            size: 18,
-            color: AppColors.accent,
-          ),
+          const Icon(Icons.verified_user_outlined,
+              size: 18, color: AppColors.accent),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textMuted,
                   ),
             ),
@@ -168,12 +156,21 @@ class PrimaryAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon, size: 20),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+    return SizedBox(
+      width: double.infinity,
+      height: AppSizes.buttonHeight,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 20),
+              const SizedBox(width: 8),
+            ],
+            Text(label),
+          ],
+        ),
       ),
     );
   }
@@ -193,17 +190,21 @@ class SecondaryAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: AppSpacing.sm),
+    return SizedBox(
+      width: double.infinity,
+      height: AppSizes.buttonHeight,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (leading != null) ...[
+              leading!,
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Text(label),
           ],
-          Text(label),
-        ],
+        ),
       ),
     );
   }
@@ -212,10 +213,7 @@ class SecondaryAuthButton extends StatelessWidget {
 class AuthDivider extends StatelessWidget {
   final String label;
 
-  const AuthDivider({
-    super.key,
-    this.label = 'or',
-  });
+  const AuthDivider({super.key, this.label = 'or'});
 
   @override
   Widget build(BuildContext context) {
@@ -240,10 +238,7 @@ class AuthDivider extends StatelessWidget {
 class InputLabel extends StatelessWidget {
   final String text;
 
-  const InputLabel({
-    super.key,
-    required this.text,
-  });
+  const InputLabel({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +247,7 @@ class InputLabel extends StatelessWidget {
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
     );
   }
@@ -260,14 +256,12 @@ class InputLabel extends StatelessWidget {
 class GlassCard extends StatelessWidget {
   final Widget child;
 
-  const GlassCard({
-    super.key,
-    required this.child,
-  });
+  const GlassCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -311,13 +305,13 @@ class OtpDigitBox extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLength: 1,
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           counterText: '',
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding: EdgeInsets.symmetric(vertical: 14),
           filled: true,
           fillColor: AppColors.surface,
         ),

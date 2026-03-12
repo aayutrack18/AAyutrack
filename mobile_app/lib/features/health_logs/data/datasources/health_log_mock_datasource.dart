@@ -1,4 +1,4 @@
-import '../../domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 
 class HealthLogMockDataSource {
   final List<HealthLog> _logs = [
@@ -59,5 +59,11 @@ class HealthLogMockDataSource {
   Future<void> deleteLog(String id) async {
     await Future.delayed(const Duration(milliseconds: 130));
     _logs.removeWhere((l) => l.id == id);
+  }
+
+  Future<void> updateLog(HealthLog log) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final idx = _logs.indexWhere((l) => l.id == log.id);
+    if (idx != -1) _logs[idx] = log;
   }
 }

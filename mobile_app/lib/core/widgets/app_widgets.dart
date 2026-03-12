@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
-import '../theme/app_theme.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 
 // ─── APP BUTTON ────────────────────────────────────────────────────────────────
 
@@ -183,9 +183,7 @@ class AppDropdown<T> extends StatelessWidget {
           value: value,
           items: items,
           onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: hint,
-          ),
+          decoration: InputDecoration(hintText: hint),
         ),
       ],
     );
@@ -268,19 +266,21 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 88,
+              height: 88,
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 36, color: AppColors.primary),
+              child: Icon(icon, size: 40, color: AppColors.primary),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -342,7 +342,10 @@ class ErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Something went wrong',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -415,11 +418,17 @@ class SectionHeader extends StatelessWidget {
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
         ),
         if (actionLabel != null && onAction != null)
           TextButton(
             onPressed: onAction,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             child: Text(
               actionLabel!,
               style: const TextStyle(
@@ -454,7 +463,7 @@ class StatusChip extends StatelessWidget {
         label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -505,7 +514,7 @@ class GradientCard extends StatelessWidget {
   }
 }
 
-// ─── METRIC CARD ───────────────────────────────────────────────────────────────
+// ─── METRIC TILE ───────────────────────────────────────────────────────────────
 
 class MetricTile extends StatelessWidget {
   final String label;
@@ -549,7 +558,7 @@ class MetricTile extends StatelessWidget {
                 Text(
                   trend!,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: trend!.startsWith('+')
                         ? AppColors.success

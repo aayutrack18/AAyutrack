@@ -1,4 +1,4 @@
-import '../../domain/entities/patient_profile.dart';
+import 'package:aayutrack/features/profile/domain/entities/patient_profile.dart';
 
 class ProfileState {
   final bool isLoading;

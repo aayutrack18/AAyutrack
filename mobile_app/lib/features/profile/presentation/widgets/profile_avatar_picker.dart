@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
-import 'section_title.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/features/profile/presentation/widgets/section_title.dart';
 
 class ProfileAvatarOption {
   final String id;
@@ -110,7 +110,7 @@ class ProfileAvatarPicker extends StatelessWidget {
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
           ),
           boxShadow: const [
             BoxShadow(
@@ -142,10 +142,10 @@ class ProfileAvatarPicker extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.10),
+                color: Colors.orange.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.18),
+                  color: Colors.orange.withOpacity(0.18),
                 ),
               ),
               child: const Row(
@@ -243,10 +243,10 @@ class _AvatarPreviewCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        color: theme.colorScheme.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.12),
+          color: theme.colorScheme.primary.withOpacity(0.12),
         ),
       ),
       child: Row(
@@ -259,7 +259,7 @@ class _AvatarPreviewCard extends StatelessWidget {
                 width: 76,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: theme.colorScheme.primary.withValues(alpha: 0.16),
+                  color: theme.colorScheme.primary.withOpacity(0.16),
                 ),
               ),
               Text(
@@ -276,7 +276,7 @@ class _AvatarPreviewCard extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: Colors.black.withOpacity(0.06),
                     ),
                   ),
                   child: Text(
@@ -318,10 +318,10 @@ class _AvatarPreviewCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.10),
+                    color: AppColors.success.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: AppColors.success.withValues(alpha: 0.18),
+                      color: AppColors.success.withOpacity(0.18),
                     ),
                   ),
                   child: const Text(
@@ -358,9 +358,9 @@ class _AvatarOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderColor =
-        isSelected ? AppColors.primary : Colors.black.withValues(alpha: 0.06);
+        isSelected ? AppColors.primary : Colors.black.withOpacity(0.06);
     final backgroundColor = isSelected
-        ? AppColors.primary.withValues(alpha: 0.08)
+        ? AppColors.primary.withOpacity(0.08)
         : Theme.of(context).cardColor;
 
     return Material(

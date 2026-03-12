@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart' as db;
 import '../../../../core/sync/profile_sync_service.dart';
 import '../../../../core/sync/sync_providers.dart';
 import '../../data/datasources/profile_local_datasource.dart';
@@ -9,12 +8,8 @@ import '../../domain/entities/patient_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'profile_state.dart';
 
-final databaseProvider = Provider<db.AppDatabase>((ref) {
-  return db.AppDatabase();
-});
-
 final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
-  final database = ref.watch(databaseProvider);
+  final database = ref.watch(appDatabaseProvider);
   return ProfileLocalDataSource(database);
 });
 
@@ -64,7 +59,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       final profile = await _repository.getProfile();
 
-      // DEBUG: Shows local SQLite profile in VS Code terminal
       print('========== LOCAL SQLITE PROFILE ==========');
       print(profile);
       print('=========================================');

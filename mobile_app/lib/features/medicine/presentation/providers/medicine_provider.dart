@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/medicine_mock_datasource.dart';
-import '../../data/repositories/medicine_repository_impl.dart';
-import '../../domain/entities/medicine.dart';
-import '../../domain/repositories/medicine_repository.dart';
+import 'package:aayutrack/features/medicine/data/datasources/medicine_mock_datasource.dart';
+import 'package:aayutrack/features/medicine/data/repositories/medicine_repository_impl.dart';
+import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
+import 'package:aayutrack/features/medicine/domain/repositories/medicine_repository.dart';
 
 // ─── PROVIDERS ────────────────────────────────────────────────────────────────
 

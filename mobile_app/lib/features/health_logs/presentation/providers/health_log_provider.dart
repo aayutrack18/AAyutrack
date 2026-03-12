@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/health_log_mock_datasource.dart';
-import '../../domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/data/datasources/health_log_mock_datasource.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 
 final healthLogDataSourceProvider = Provider<HealthLogMockDataSource>((ref) {
   return HealthLogMockDataSource();
@@ -84,6 +84,15 @@ class HealthLogNotifier extends StateNotifier<HealthLogState> {
   Future<void> deleteLog(String id) async {
     try {
       await _ds.deleteLog(id);
+      await loadLogs();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> updateLog(HealthLog log) async {
+    try {
+      await _ds.updateLog(log);
       await loadLogs();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());

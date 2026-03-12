@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 
 class SectionTitle extends StatelessWidget {
   final String title;
@@ -28,7 +28,7 @@ class SectionTitle extends StatelessWidget {
     final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
 
     final resolvedIconBackgroundColor = iconBackgroundColor ??
-        theme.colorScheme.primary.withValues(alpha: 0.10);
+        theme.colorScheme.primary.withOpacity(0.10);
     final resolvedIconColor = iconColor ?? theme.colorScheme.primary;
 
     return Container(
@@ -44,7 +44,7 @@ class SectionTitle extends StatelessWidget {
               color: resolvedIconBackgroundColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: resolvedIconColor.withValues(alpha: 0.10),
+                color: resolvedIconColor.withOpacity(0.10),
               ),
             ),
             child: Icon(
