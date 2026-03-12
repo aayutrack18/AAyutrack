@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../domain/entities/health_log.dart';
-import '../providers/health_log_provider.dart';
-import 'add_health_log_screen.dart';
-import 'health_log_history_screen.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/core/widgets/app_widgets.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/add_health_log_screen.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/health_log_history_screen.dart';
 
 class HealthLogsDashboardScreen extends ConsumerWidget {
   const HealthLogsDashboardScreen({super.key});
@@ -42,21 +42,17 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          'Health Logs',
-          style: TextStyle(
-              fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        ),
+        title: const Text('Health Logs'),
         actions: [
           IconButton(
             icon: const Icon(Icons.history_rounded, color: AppColors.textMuted),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const HealthLogHistoryScreen()),
-            ),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const HealthLogHistoryScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded, color: AppColors.primary),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
           ),
         ],
       ),
@@ -65,16 +61,50 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
               children: [
-                _buildLatestReadings(context, state),
+                _buildLogButton(context),
                 const SizedBox(height: 20),
-                _buildRecentLogs(context, state, ref),
+                const SectionHeader(title: 'Latest Readings'),
+                const SizedBox(height: 12),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.25,
+                  children: MetricType.values.map((type) {
+                    final latest = state.latestOfType(type);
+                    final color = _metricColor(type);
+                    return _MetricCard(
+                      type: type,
+                      log: latest,
+                      color: color,
+                      icon: _metricIcon(type),
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                SectionHeader(
+                  title: 'Recent Logs',
+                  actionLabel: 'View All',
+                  onAction: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const HealthLogHistoryScreen())),
+                ),
+                const SizedBox(height: 12),
+                if (state.logs.isEmpty)
+                  const _EmptyLogsCard()
+                else
+                  ...state.logs.take(5).map((log) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _LogListItem(log: log, color: _metricColor(log.type), icon: _metricIcon(log.type)),
+                      )),
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddHealthLogScreen()),
-        ),
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('Log Reading',
@@ -83,95 +113,49 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLatestReadings(
-      BuildContext context, HealthLogState state) {
-    final metrics = MetricType.values
-        .where((t) => t != MetricType.mood)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Latest Readings'),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.4,
-          ),
-          itemCount: metrics.length,
-          itemBuilder: (_, i) {
-            final type = metrics[i];
-            final latest = state.latestOfType(type);
-            final color = _metricColor(type);
-
-            return MetricTile(
-              label: type.label,
-              value: latest?.displayValue ?? '--',
-              unit: latest != null ? type.unit : '',
-              icon: _metricIcon(type),
-              color: color,
-            );
-          },
+  Widget _buildLogButton(BuildContext context) {
+    return GradientCard(
+      colors: const [AppColors.accent, Color(0xFF0D9488)],
+      child: Row(children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Log a Reading',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('Track BP, sugar, weight & more',
+                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12)),
+          ]),
         ),
-      ],
-    );
-  }
-
-  Widget _buildRecentLogs(
-      BuildContext context, HealthLogState state, WidgetRef ref) {
-    final recent = state.logs.take(10).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: 'Recent Entries',
-          actionLabel: 'View All',
-          onAction: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => const HealthLogHistoryScreen()),
+        ElevatedButton(
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.accent,
+            minimumSize: const Size(0, 38),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
+          child: const Text('Log Now', style: TextStyle(fontWeight: FontWeight.w700)),
         ),
-        const SizedBox(height: 12),
-        if (recent.isEmpty)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('No logs yet. Start tracking!',
-                  style: TextStyle(color: AppColors.textMuted)),
-            ),
-          )
-        else
-          ...recent.map((log) => _LogEntryTile(
-                log: log,
-                color: _metricColor(log.type),
-                icon: _metricIcon(log.type),
-                onDelete: () => ref
-                    .read(healthLogProvider.notifier)
-                    .deleteLog(log.id),
-              )),
-      ],
+      ]),
     );
   }
 }
 
-class _LogEntryTile extends StatelessWidget {
-  final HealthLog log;
+class _MetricCard extends StatelessWidget {
+  final MetricType type;
+  final HealthLog? log;
   final Color color;
   final IconData icon;
-  final VoidCallback onDelete;
+  final VoidCallback onTap;
 
-  const _LogEntryTile({
+  const _MetricCard({
+    required this.type,
     required this.log,
     required this.color,
     required this.icon,
-    required this.onDelete,
+    required this.onTap,
   });
 
   String _timeAgo(DateTime dt) {
@@ -183,66 +167,110 @@ class _LogEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Container(
-              width: 42,
-              height: 42,
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, size: 16, color: color),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    log.type.label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  if (log.notes.isNotEmpty)
-                    Text(
-                      log.notes,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${log.displayValue} ${log.type.unit}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  _timeAgo(log.recordedAt),
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ],
-        ),
+            if (log != null)
+              Text(_timeAgo(log!.recordedAt),
+                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+          ]),
+          const Spacer(),
+          Text(
+            log?.displayValue ?? '--',
+            style: TextStyle(
+                fontSize: log != null ? 20 : 22,
+                fontWeight: FontWeight.w800,
+                color: log != null ? AppColors.textPrimary : AppColors.textMuted),
+          ),
+          if (log != null && type.unit.isNotEmpty)
+            Text(type.unit,
+                style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(type.label,
+              style: const TextStyle(
+                  fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ],
       ),
+    );
+  }
+}
+
+class _LogListItem extends StatelessWidget {
+  final HealthLog log;
+  final Color color;
+  final IconData icon;
+
+  const _LogListItem({required this.log, required this.color, required this.icon});
+
+  String _formatDt(DateTime dt) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day} ${months[dt.month-1]}, $h:$m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(log.type.label,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary)),
+          Text(_formatDt(log.recordedAt),
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(log.displayValue,
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: color)),
+          if (log.type.unit.isNotEmpty)
+            Text(log.type.unit,
+                style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _EmptyLogsCard extends StatelessWidget {
+  const _EmptyLogsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: const Column(children: [
+        Icon(Icons.monitor_heart_outlined, color: AppColors.textMuted, size: 40),
+        SizedBox(height: 12),
+        Text('No readings yet',
+            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        SizedBox(height: 4),
+        Text('Tap "Log Now" to record your first health reading.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+      ]),
     );
   }
 }

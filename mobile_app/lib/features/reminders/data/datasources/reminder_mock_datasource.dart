@@ -1,4 +1,4 @@
-import '../../domain/entities/reminder.dart';
+import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 
 class ReminderMockDataSource {
   final List<Reminder> _reminders = [

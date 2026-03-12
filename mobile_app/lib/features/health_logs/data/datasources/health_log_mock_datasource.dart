@@ -1,4 +1,4 @@
-import '../../domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 
 class HealthLogMockDataSource {
   final List<HealthLog> _logs = [

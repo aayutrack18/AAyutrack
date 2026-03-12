@@ -7,10 +7,7 @@ import 'package:aayutrack/features/auth/presentation/widgets/auth_widgets.dart';
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
 
-  const OtpScreen({
-    super.key,
-    required this.phoneNumber,
-  });
+  const OtpScreen({super.key, required this.phoneNumber});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -27,36 +24,28 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(
-      AppStrings.otpLength,
-      (_) => TextEditingController(),
-    );
-    _focusNodes = List.generate(
-      AppStrings.otpLength,
-      (_) => FocusNode(),
-    );
+    _controllers = List.generate(AppStrings.otpLength, (_) => TextEditingController());
+    _focusNodes = List.generate(AppStrings.otpLength, (_) => FocusNode());
     _startTimer();
+
+    // Auto-focus first field
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNodes[0].requestFocus();
+    });
   }
 
   void _startTimer() {
     _timer?.cancel();
-
-    setState(() {
-      _secondsLeft = AppStrings.resendSeconds;
-    });
-
+    setState(() => _secondsLeft = AppStrings.resendSeconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-
       if (_secondsLeft == 0) {
         timer.cancel();
       } else {
-        setState(() {
-          _secondsLeft--;
-        });
+        setState(() => _secondsLeft--);
       }
     });
   }
@@ -65,69 +54,50 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _verifyOtp() async {
     FocusScope.of(context).unfocus();
-
     if (_otp.length != AppStrings.otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter the complete OTP.'),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    setState(() {
-      _isVerifying = true;
-    });
+    setState(() => _isVerifying = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 900));
-
-      final bool otpVerified = true;
-
-      if (!mounted) return;
-
-      if (otpVerified) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful'),
-          ),
-        );
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.profileGate,
-          (route) => false,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid OTP. Please try again.'),
-          ),
-        );
-      }
-    } catch (e) {
+      await Future.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Verification failed: $e'),
+        const SnackBar(
+          content: Text('✓ Login successful'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.success,
         ),
       );
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isVerifying = false;
-        });
-      }
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
   void _resendCode() {
     _startTimer();
-
+    for (final c in _controllers) {
+      c.clear();
+    }
+    _focusNodes[0].requestFocus();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('OTP resent successfully'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -135,15 +105,12 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-
-    for (final controller in _controllers) {
-      controller.dispose();
+    for (final c in _controllers) {
+      c.dispose();
     }
-
-    for (final node in _focusNodes) {
-      node.dispose();
+    for (final n in _focusNodes) {
+      n.dispose();
     }
-
     super.dispose();
   }
 
@@ -155,7 +122,8 @@ class _OtpScreenState extends State<OtpScreen> {
         children: [
           IconButton(
             onPressed: _isVerifying ? null : () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
@@ -199,9 +167,10 @@ class _OtpScreenState extends State<OtpScreen> {
               _secondsLeft > 0
                   ? 'Resend code in ${_secondsLeft}s'
                   : 'You can resend the code now',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.textMuted),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

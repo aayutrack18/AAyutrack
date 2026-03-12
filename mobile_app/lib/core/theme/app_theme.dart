@@ -18,6 +18,7 @@ class AppColors {
 
   static const Color success = Color(0xFF16A34A);
   static const Color danger = Color(0xFFDC2626);
+  static const Color warning = Color(0xFFF59E0B);
   static const Color shadow = Color(0x140F172A);
 }
 
@@ -53,7 +54,6 @@ class AppTheme {
       ),
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
-        background: AppColors.background,
         surface: AppColors.surface,
         primary: AppColors.primary,
       ),
@@ -75,11 +75,19 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.danger),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.4),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          minimumSize: const Size(double.infinity, 56),
+          minimumSize: const Size(double.infinity, 54),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
@@ -93,7 +101,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 56),
+          minimumSize: const Size(double.infinity, 54),
           foregroundColor: AppColors.textPrimary,
           side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
@@ -103,6 +111,16 @@ class AppTheme {
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

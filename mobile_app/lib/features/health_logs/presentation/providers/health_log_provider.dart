@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/health_log_mock_datasource.dart';
-import '../../domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/data/datasources/health_log_mock_datasource.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 
 final healthLogDataSourceProvider = Provider<HealthLogMockDataSource>((ref) {
   return HealthLogMockDataSource();

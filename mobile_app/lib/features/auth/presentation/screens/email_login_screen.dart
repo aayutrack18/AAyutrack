@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/features/auth/presentation/widgets/auth_widgets.dart';
 
 class EmailLoginScreen extends StatefulWidget {
@@ -13,8 +14,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   bool _obscure = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -23,14 +24,16 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     super.dispose();
   }
 
-  void _signIn() {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('Email login UI ready. Firebase sign-in will be added next.'),
-      ),
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
     );
   }
 
@@ -42,7 +45,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
@@ -63,18 +67,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter your email'),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Enter your email address';
                       }
-                      if (!value.contains('@')) {
+                      if (!value.contains('@') || !value.contains('.')) {
                         return 'Enter a valid email address';
                       }
                       return null;
                     },
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your email',
-                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const InputLabel(text: 'Password'),
@@ -82,6 +85,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscure,
+                    decoration: InputDecoration(
+                      hintText: 'Enter your password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                      ),
+                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Enter your password';
@@ -91,51 +107,47 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                       }
                       return null;
                     },
-                    decoration: InputDecoration(
-                      hintText: 'Enter your password',
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() => _obscure = !_obscure);
-                        },
-                        icon: Icon(
-                          _obscure
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                      ),
-                    ),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.forgotPassword);
-                      },
-                      child: const Text('Forgot Password?'),
+                      onPressed: () => Navigator.pushNamed(
+                          context, AppRoutes.forgotPassword),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Forgot password?',
+                        style: TextStyle(
+                            color: AppColors.primary, fontSize: 13),
+                      ),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
                   PrimaryAuthButton(
-                    label: 'Sign In',
-                    icon: Icons.login_rounded,
-                    onPressed: _signIn,
+                    label: _isLoading ? 'Signing in...' : 'Sign In',
+                    icon: _isLoading
+                        ? Icons.hourglass_top_rounded
+                        : Icons.login_rounded,
+                    onPressed: _isLoading ? null : _signIn,
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
           Center(
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const Text('Don’t have an account? '),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.createAccount);
-                  },
-                  child: const Text('Create Account'),
-                ),
-              ],
+            child: TextButton(
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.createAccount),
+              child: const Text(
+                "Don't have an account? Sign up",
+                style: TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
         ],

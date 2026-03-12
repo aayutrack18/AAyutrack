@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../../compliance/presentation/providers/compliance_provider.dart';
-import '../../../health_logs/domain/entities/health_log.dart';
-import '../../../health_logs/presentation/providers/health_log_provider.dart';
-import '../../../health_logs/presentation/screens/add_health_log_screen.dart';
-import '../../../medicine/presentation/providers/medicine_provider.dart';
-import '../../../profile/presentation/providers/profile_provider.dart';
-import '../../../reminders/presentation/providers/reminder_provider.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/core/widgets/app_widgets.dart';
+import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
+import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
+import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/add_health_log_screen.dart';
+import 'package:aayutrack/features/medicine/presentation/providers/medicine_provider.dart';
+import 'package:aayutrack/features/profile/presentation/providers/profile_provider.dart';
+import 'package:aayutrack/features/reminders/presentation/providers/reminder_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -21,6 +21,16 @@ class DashboardScreen extends ConsumerWidget {
     return 'Good evening';
   }
 
+  String _todayDate() {
+    final now = DateTime.now();
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileProvider);
@@ -29,7 +39,8 @@ class DashboardScreen extends ConsumerWidget {
     final healthState = ref.watch(healthLogProvider);
     final complianceState = ref.watch(complianceProvider);
 
-    final name = profileState.profile?.fullName.split(' ').first ?? 'there';
+    final name =
+        profileState.profile?.fullName.split(' ').first ?? 'there';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -38,7 +49,7 @@ class DashboardScreen extends ConsumerWidget {
           _buildSliverHeader(context, name, complianceState),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -69,6 +80,7 @@ class DashboardScreen extends ConsumerWidget {
       floating: true,
       pinned: false,
       backgroundColor: AppColors.primary,
+      automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
@@ -95,7 +107,7 @@ class DashboardScreen extends ConsumerWidget {
                             '${_greeting()}, $name! 👋',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -104,7 +116,7 @@ class DashboardScreen extends ConsumerWidget {
                             _todayDate(),
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.8),
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -157,8 +169,10 @@ class DashboardScreen extends ConsumerWidget {
         icon: Icons.add_circle_rounded,
         label: 'Log Reading',
         color: AppColors.accent,
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddHealthLogScreen()),
+        ),
       ),
       _QuickAction(
         icon: Icons.medication_rounded,
@@ -193,8 +207,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTodayMedicines(
-      BuildContext context, MedicineState medState) {
+  Widget _buildTodayMedicines(BuildContext context, MedicineState medState) {
     final active = medState.activeMedicines.take(3).toList();
 
     return Column(
@@ -216,12 +229,8 @@ class DashboardScreen extends ConsumerWidget {
                 const Icon(Icons.medication_outlined,
                     color: AppColors.textMuted),
                 const SizedBox(width: 12),
-                Text(
-                  'No active medicines',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textMuted,
-                      ),
-                ),
+                const Text('No active medicines',
+                    style: TextStyle(color: AppColors.textMuted)),
               ],
             ),
           )
@@ -257,7 +266,8 @@ class DashboardScreen extends ConsumerWidget {
                                   color: AppColors.textPrimary)),
                           Text('${m.dosage} · ${m.frequency}',
                               style: const TextStyle(
-                                  fontSize: 11, color: AppColors.textMuted)),
+                                  fontSize: 11,
+                                  color: AppColors.textMuted)),
                         ],
                       ),
                     ),
@@ -295,8 +305,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   const Text('Compliance Score',
                       style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12)),
+                          color: Colors.white70, fontSize: 12)),
                   Text(
                     '${compliance.overallScore.toInt()}% · ${compliance.scoreLabel}',
                     style: const TextStyle(
@@ -331,7 +340,8 @@ class DashboardScreen extends ConsumerWidget {
                     child: Text(
                       '${compliance.unreadAlertCount}',
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w800),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -362,11 +372,10 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         if (enabled.isEmpty)
           AppCard(
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.alarm_off_rounded,
-                    color: AppColors.textMuted),
-                const SizedBox(width: 12),
+                Icon(Icons.alarm_off_rounded, color: AppColors.textMuted),
+                SizedBox(width: 12),
                 Text('No reminders set',
                     style: TextStyle(color: AppColors.textMuted)),
               ],
@@ -403,8 +412,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthSummary(
-      BuildContext context, HealthLogState healthState) {
+  Widget _buildHealthSummary(BuildContext context, HealthLogState healthState) {
     final latestBp = healthState.latestOfType(MetricType.bloodPressure);
     final latestSugar = healthState.latestOfType(MetricType.bloodSugar);
     final latestHr = healthState.latestOfType(MetricType.heartRate);
@@ -495,8 +503,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAlerts(
-      BuildContext context, ComplianceState compliance) {
+  Widget _buildAlerts(BuildContext context, ComplianceState compliance) {
     final unread =
         compliance.alerts.where((a) => !a.isRead).take(2).toList();
     if (unread.isEmpty) return const SizedBox.shrink();
@@ -564,16 +571,6 @@ class DashboardScreen extends ConsumerWidget {
       return AppColors.primary;
     }
   }
-
-  String _todayDate() {
-    final now = DateTime.now();
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
-  }
 }
 
 class _QuickAction {
@@ -609,8 +606,7 @@ class _QuickActionButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: action.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: action.color.withOpacity(0.2)),
+                border: Border.all(color: action.color.withOpacity(0.2)),
               ),
               child: Icon(action.icon, color: action.color, size: 26),
             ),

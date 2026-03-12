@@ -19,7 +19,7 @@ class AppRoutes {
   // Main Shell
   static const String home = '/home';
 
-  // Dashboard (legacy, redirects to home)
+  // Dashboard (alias)
   static const String dashboard = '/home';
 
   // Medicine

@@ -1,6 +1,6 @@
-import '../../domain/entities/medicine.dart';
-import '../../domain/repositories/medicine_repository.dart';
-import '../datasources/medicine_mock_datasource.dart';
+import 'package:aayutrack/features/medicine/data/datasources/medicine_mock_datasource.dart';
+import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
+import 'package:aayutrack/features/medicine/domain/repositories/medicine_repository.dart';
 
 class MedicineRepositoryImpl implements MedicineRepository {
   final MedicineMockDataSource _dataSource;
@@ -9,10 +9,6 @@ class MedicineRepositoryImpl implements MedicineRepository {
 
   @override
   Future<List<Medicine>> getMedicines() => _dataSource.getMedicines();
-
-  @override
-  Future<Medicine?> getMedicineById(String id) =>
-      _dataSource.getMedicineById(id);
 
   @override
   Future<void> saveMedicine(Medicine medicine) =>

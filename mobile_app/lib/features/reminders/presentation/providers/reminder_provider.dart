@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/reminder_mock_datasource.dart';
-import '../../domain/entities/reminder.dart';
+import 'package:aayutrack/features/reminders/data/datasources/reminder_mock_datasource.dart';
+import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 
 final reminderDataSourceProvider = Provider<ReminderMockDataSource>((ref) {
   return ReminderMockDataSource();

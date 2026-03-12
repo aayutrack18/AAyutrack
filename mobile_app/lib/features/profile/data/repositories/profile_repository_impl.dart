@@ -1,7 +1,7 @@
-import '../../domain/entities/patient_profile.dart';
-import '../../domain/repositories/profile_repository.dart';
-import '../datasources/profile_local_datasource.dart';
-import '../models/patient_profile_model.dart';
+import 'package:aayutrack/features/profile/domain/entities/patient_profile.dart';
+import 'package:aayutrack/features/profile/domain/repositories/profile_repository.dart';
+import 'package:aayutrack/features/profile/data/datasources/profile_local_datasource.dart';
+import 'package:aayutrack/features/profile/data/models/patient_profile_model.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileLocalDataSource localDataSource;

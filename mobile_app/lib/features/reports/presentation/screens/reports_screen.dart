@@ -1,39 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../../compliance/presentation/providers/compliance_provider.dart';
-import '../../../health_logs/domain/entities/health_log.dart';
-import '../../../health_logs/presentation/providers/health_log_provider.dart';
-import '../../../medicine/presentation/providers/medicine_provider.dart';
-import '../../../profile/presentation/providers/profile_provider.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
+import 'package:aayutrack/core/widgets/app_widgets.dart';
+import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/medicine/presentation/providers/medicine_provider.dart';
 
 class ReportsScreen extends ConsumerWidget {
   const ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(profileProvider).profile;
+    final compliance = ref.watch(complianceProvider);
     final medicines = ref.watch(medicineProvider);
     final healthLogs = ref.watch(healthLogProvider);
-    final compliance = ref.watch(complianceProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text('Reports',
-            style: TextStyle(
-                fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        title: const Text('Reports'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined, color: AppColors.textMuted),
+            icon: const Icon(Icons.share_rounded, color: AppColors.textMuted),
             onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text(
-                      'Export/Share feature coming soon!')),
+                content: Text('Sharing reports — coming soon!'),
+                behavior: SnackBarBehavior.floating,
+              ),
             ),
           ),
         ],
@@ -41,287 +34,300 @@ class ReportsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
         children: [
-          // Header summary card
+          // Month selector
+          _MonthHeader(),
+          const SizedBox(height: 16),
+
+          // Compliance snapshot
           GradientCard(
-            colors: const [AppColors.primary, AppColors.primaryDark],
+            colors: const [AppColors.primary, Color(0xFF1E40AF)],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.summarize_rounded,
-                        color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    const Text('Health Summary Report',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16)),
-                  ],
+                const Text('Monthly Compliance',
+                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Text('${compliance.overallScore.toInt()}%',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 44,
+                          fontWeight: FontWeight.w900)),
+                  const SizedBox(width: 12),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(compliance.scoreLabel,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${compliance.unreadAlertCount} active alert${compliance.unreadAlertCount == 1 ? '' : 's'}',
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.7), fontSize: 11),
+                    ),
+                  ]),
+                ]),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: compliance.overallScore / 100,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    valueColor: const AlwaysStoppedAnimation(Colors.white),
+                    minHeight: 6,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _monthYear(),
-                  style:
-                      const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _HeaderStat(
-                        label: 'Compliance',
-                        value:
-                            '${compliance.overallScore.toInt()}%'),
-                    _HeaderStat(
-                        label: 'Medicines',
-                        value:
-                            '${medicines.activeMedicines.length} active'),
-                    _HeaderStat(
-                        label: 'Logs',
-                        value: '${healthLogs.logs.length} entries'),
-                  ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Key metrics grid
+          const SectionHeader(title: 'Key Metrics'),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.6,
+            children: [
+              _MetricTile(
+                label: 'Medicine Adherence',
+                value: '${compliance.medicineAdherence.toInt()}%',
+                icon: Icons.medication_rounded,
+                color: AppColors.primary,
+              ),
+              _MetricTile(
+                label: 'Health Log Rate',
+                value: '${compliance.logAdherence.toInt()}%',
+                icon: Icons.monitor_heart_rounded,
+                color: AppColors.accent,
+              ),
+              _MetricTile(
+                label: 'Active Medicines',
+                value: '${medicines.activeMedicines.length}',
+                icon: Icons.tablet_rounded,
+                color: const Color(0xFF7C3AED),
+              ),
+              _MetricTile(
+                label: 'Readings Logged',
+                value: '${healthLogs.logs.length}',
+                icon: Icons.bar_chart_rounded,
+                color: const Color(0xFFF59E0B),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Weekly trend
+          const SectionHeader(title: 'Weekly Trend'),
+          const SizedBox(height: 10),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 120,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: compliance.weeklyTrend.map((w) {
+                      final pct = w.percentage / 100;
+                      final barColor = w.percentage >= 90
+                          ? AppColors.success
+                          : w.percentage >= 60
+                              ? AppColors.warning
+                              : AppColors.danger;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('${w.percentage.toInt()}',
+                              style: TextStyle(
+                                  fontSize: 9, fontWeight: FontWeight.w600, color: barColor)),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 30,
+                            height: 90 * pct,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [barColor.withOpacity(0.6), barColor],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(w.day,
+                              style: const TextStyle(
+                                  fontSize: 10, color: AppColors.textMuted)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // Profile section
-          _ReportSection(
-            title: 'Patient Profile',
-            icon: Icons.person_rounded,
-            color: AppColors.primary,
-            children: [
-              _ReportRow('Name', profile?.fullName ?? 'Not set'),
-              _ReportRow('Age', profile != null ? '${profile.age} years' : '--'),
-              _ReportRow('Blood Group', profile?.bloodGroup ?? '--'),
-              _ReportRow('Conditions', profile?.medicalConditions.isNotEmpty == true
-                  ? profile!.medicalConditions
-                  : 'None listed'),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Medicine section
-          _ReportSection(
-            title: 'Medicine Summary',
+          // Exportable report cards
+          const SectionHeader(title: 'Download Reports'),
+          const SizedBox(height: 10),
+          _ReportCard(
+            title: 'Medicine Adherence Report',
+            description: 'Detailed history of all medicine doses taken and missed',
             icon: Icons.medication_rounded,
-            color: const Color(0xFF14B8A6),
-            children: [
-              _ReportRow('Total Medicines',
-                  '${medicines.medicines.length}'),
-              _ReportRow('Active',
-                  '${medicines.activeMedicines.length}'),
-              _ReportRow('Paused',
-                  '${medicines.inactiveMedicines.length}'),
-              ...medicines.activeMedicines.take(3).map((m) =>
-                  _ReportRow(m.name, '${m.dosage} · ${m.frequency}')),
-            ],
+            color: AppColors.primary,
+            onTap: () => _showComingSoon(context),
           ),
-          const SizedBox(height: 16),
-
-          // Health Logs Section
-          _ReportSection(
-            title: 'Health Log Summary',
+          const SizedBox(height: 10),
+          _ReportCard(
+            title: 'Health Vitals Summary',
+            description: 'All BP, blood sugar, weight and other readings this month',
             icon: Icons.monitor_heart_rounded,
-            color: const Color(0xFFEC4899),
-            children: [
-              _ReportRow('Total Entries', '${healthLogs.logs.length}'),
-              ...MetricType.values.map((type) {
-                final latest = healthLogs.latestOfType(type);
-                return _ReportRow(
-                  type.label,
-                  latest != null
-                      ? '${latest.displayValue} ${type.unit}'
-                      : 'No data',
-                );
-              }),
-            ],
+            color: AppColors.accent,
+            onTap: () => _showComingSoon(context),
           ),
-          const SizedBox(height: 16),
-
-          // Compliance section
-          _ReportSection(
-            title: 'Compliance Summary',
-            icon: Icons.verified_rounded,
+          const SizedBox(height: 10),
+          _ReportCard(
+            title: 'Doctor\'s Report',
+            description: 'A shareable summary for your next doctor\'s appointment',
+            icon: Icons.picture_as_pdf_rounded,
             color: const Color(0xFF7C3AED),
-            children: [
-              _ReportRow('Overall Score',
-                  '${compliance.overallScore.toInt()}% (${compliance.scoreLabel})'),
-              _ReportRow('Medicine Adherence',
-                  '${compliance.medicineAdherence.toInt()}%'),
-              _ReportRow('Log Adherence',
-                  '${compliance.logAdherence.toInt()}%'),
-              _ReportRow('Risk Alerts',
-                  '${compliance.alerts.length} total'),
-              _ReportRow('Unread Alerts',
-                  '${compliance.unreadAlertCount}'),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Export button
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Export Report',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Share your health report with your doctor or caregiver.',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textMuted),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'Share PDF',
-                        icon: Icons.picture_as_pdf_rounded,
-                        onPressed: () =>
-                            ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('PDF export coming soon!')),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppButton(
-                        label: 'Share Link',
-                        icon: Icons.link_rounded,
-                        outlined: true,
-                        onPressed: () =>
-                            ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Share link coming soon!')),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            onTap: () => _showComingSoon(context),
           ),
         ],
       ),
     );
   }
 
-  String _monthYear() {
-    final now = DateTime.now();
-    final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return '${months[now.month - 1]} ${now.year}';
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('PDF reports — coming in next release!'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.primary,
+      ),
+    );
   }
 }
 
-class _HeaderStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _HeaderStat({required this.label, required this.value});
-
+class _MonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(value,
+    final now = DateTime.now();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.calendar_month_rounded, size: 16, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text('${months[now.month - 1]} ${now.year}',
               style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16)),
-          Text(label,
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 11)),
-        ],
+                  fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.primary)),
+        ]),
       ),
-    );
+    ]);
   }
 }
 
-class _ReportSection extends StatelessWidget {
-  final String title;
+class _MetricTile extends StatelessWidget {
+  final String label;
+  final String value;
   final IconData icon;
   final Color color;
-  final List<Widget> children;
 
-  const _ReportSection({
-    required this.title,
+  const _MetricTile({
+    required this.label,
+    required this.value,
     required this.icon,
     required this.color,
-    required this.children,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text(title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-            ],
-          ),
-          const Divider(height: 20, color: AppColors.border),
-          ...children,
+          Icon(icon, size: 18, color: color),
+          const Spacer(),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: FontWeight.w800, fontSize: 22, color: color)),
+          Text(label,
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
         ],
       ),
     );
   }
 }
 
-class _ReportRow extends StatelessWidget {
-  final String label;
-  final String value;
+class _ReportCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _ReportRow(this.label, this.value);
+  const _ReportCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textMuted)),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary),
-            ),
+    return AppCard(
+      onTap: onTap,
+      child: Row(children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
           ),
-        ],
-      ),
+          child: Icon(icon, color: color, size: 22),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.textPrimary)),
+            const SizedBox(height: 3),
+            Text(description,
+                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                maxLines: 2),
+          ],
+        )),
+        const SizedBox(width: 8),
+        const Icon(Icons.download_rounded, color: AppColors.textMuted, size: 20),
+      ]),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 
 class ProfileDropdownField<T> extends StatefulWidget {
   final String label;
@@ -40,12 +40,12 @@ class _ProfileDropdownFieldState<T> extends State<ProfileDropdownField<T>> {
     required bool isEnabled,
   }) {
     if (!isEnabled) {
-      return Colors.black.withValues(alpha: 0.04);
+      return Colors.black.withOpacity(0.04);
     }
     if (isFocused) {
       return AppColors.primary;
     }
-    return Colors.black.withValues(alpha: 0.08);
+    return Colors.black.withOpacity(0.08);
   }
 
   Color _backgroundColor({
@@ -53,10 +53,10 @@ class _ProfileDropdownFieldState<T> extends State<ProfileDropdownField<T>> {
     required bool isEnabled,
   }) {
     if (!isEnabled) {
-      return Colors.black.withValues(alpha: 0.03);
+      return Colors.black.withOpacity(0.03);
     }
     if (isFocused) {
-      return AppColors.primary.withValues(alpha: 0.03);
+      return AppColors.primary.withOpacity(0.03);
     }
     return Colors.white;
   }
@@ -101,7 +101,7 @@ class _ProfileDropdownFieldState<T> extends State<ProfileDropdownField<T>> {
               boxShadow: _isFocused
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.10),
+                        color: AppColors.primary.withOpacity(0.10),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),

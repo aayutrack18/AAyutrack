@@ -1,4 +1,4 @@
-import '../models/patient_profile_model.dart';
+import 'package:aayutrack/features/profile/data/models/patient_profile_model.dart';
 
 class ProfileLocalDataSource {
   static const Duration _defaultDelay = Duration(milliseconds: 180);

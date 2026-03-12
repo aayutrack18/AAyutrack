@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/features/auth/presentation/widgets/auth_widgets.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -10,34 +12,32 @@ class CreateAccountScreen extends StatefulWidget {
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscure = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  void _createAccount() {
+  Future<void> _createAccount() async {
     if (!_formKey.currentState!.validate()) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Create account UI ready. Firebase registration will be added next.',
-        ),
-      ),
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.patientOnboarding,
+      (route) => false,
     );
   }
 
@@ -49,100 +49,110 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           const AuthHeader(
             title: 'Create account',
-            subtitle: 'Set up your secure AAYUTRACK access in a few steps.',
+            subtitle: 'Join AAYUTRACK to manage your health journey.',
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xl),
           GlassCard(
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const InputLabel(text: 'Full name'),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
-                    controller: _nameController,
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter your full name'
-                        : null,
-                    decoration: const InputDecoration(
-                      hintText: 'Full name',
-                    ),
+                    controller: _nameCtrl,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter your full name'),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Enter your name' : null,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
+                  const InputLabel(text: 'Email address'),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
-                    controller: _emailController,
+                    controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) => value == null || !value.contains('@')
-                        ? 'Enter a valid email'
-                        : null,
-                    decoration: const InputDecoration(
-                      hintText: 'Email address',
-                    ),
+                    decoration:
+                        const InputDecoration(hintText: 'Enter your email'),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Enter your email';
+                      }
+                      if (!v.contains('@')) return 'Enter a valid email';
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
+                  const InputLabel(text: 'Password'),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    validator: (value) => value == null || value.length < 6
-                        ? 'Password must be at least 6 characters'
-                        : null,
+                    controller: _passwordCtrl,
+                    obscureText: _obscure,
                     decoration: InputDecoration(
-                      hintText: 'Password',
+                      hintText: 'Create a password',
                       suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                          _obscure
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: AppColors.textMuted,
+                          size: 20,
                         ),
+                        onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirm,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Confirm your password';
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Enter a password';
+                      if (v.length < 6) {
+                        return 'At least 6 characters required';
                       }
-                      if (value != _passwordController.text) {
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const InputLabel(text: 'Confirm password'),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextFormField(
+                    controller: _confirmCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                        hintText: 'Re-enter your password'),
+                    validator: (v) {
+                      if (v != _passwordCtrl.text) {
                         return 'Passwords do not match';
                       }
                       return null;
                     },
-                    decoration: InputDecoration(
-                      hintText: 'Confirm password',
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirm = !_obscureConfirm;
-                          });
-                        },
-                        icon: Icon(
-                          _obscureConfirm
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.lg),
                   PrimaryAuthButton(
-                    label: 'Create Account',
-                    icon: Icons.person_add_alt_1_rounded,
-                    onPressed: _createAccount,
+                    label: _isLoading ? 'Creating Account...' : 'Create Account',
+                    icon: _isLoading
+                        ? Icons.hourglass_top_rounded
+                        : Icons.person_add_rounded,
+                    onPressed: _isLoading ? null : _createAccount,
                   ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Already have an account? Sign in',
+                style: TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.w600),
               ),
             ),
           ),

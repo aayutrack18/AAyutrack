@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/datasources/profile_local_datasource.dart';
-import '../../data/repositories/profile_repository_impl.dart';
-import '../../domain/entities/patient_profile.dart';
-import '../../domain/repositories/profile_repository.dart';
-import 'profile_state.dart';
+import 'package:aayutrack/features/profile/data/datasources/profile_local_datasource.dart';
+import 'package:aayutrack/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:aayutrack/features/profile/domain/entities/patient_profile.dart';
+import 'package:aayutrack/features/profile/domain/repositories/profile_repository.dart';
+import 'package:aayutrack/features/profile/presentation/providers/profile_state.dart';
 
 final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
   return ProfileLocalDataSource();
