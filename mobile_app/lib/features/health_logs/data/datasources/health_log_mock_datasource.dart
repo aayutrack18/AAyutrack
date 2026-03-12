@@ -60,4 +60,10 @@ class HealthLogMockDataSource {
     await Future.delayed(const Duration(milliseconds: 130));
     _logs.removeWhere((l) => l.id == id);
   }
+
+  Future<void> updateLog(HealthLog log) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final idx = _logs.indexWhere((l) => l.id == log.id);
+    if (idx != -1) _logs[idx] = log;
+  }
 }

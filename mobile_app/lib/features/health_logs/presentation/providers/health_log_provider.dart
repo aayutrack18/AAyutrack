@@ -89,4 +89,13 @@ class HealthLogNotifier extends StateNotifier<HealthLogState> {
       state = state.copyWith(errorMessage: e.toString());
     }
   }
+
+  Future<void> updateLog(HealthLog log) async {
+    try {
+      await _ds.updateLog(log);
+      await loadLogs();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
 }

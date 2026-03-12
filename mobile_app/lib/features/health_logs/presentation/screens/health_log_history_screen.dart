@@ -5,6 +5,7 @@ import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/edit_health_log_screen.dart';
 
 class HealthLogHistoryScreen extends ConsumerStatefulWidget {
   const HealthLogHistoryScreen({super.key});
@@ -116,66 +117,114 @@ class _HealthLogHistoryScreenState extends ConsumerState<HealthLogHistoryScreen>
                     itemBuilder: (ctx, i) {
                       final log = logs[i];
                       final color = _metricColor(log.type);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: AppCard(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          child: Row(children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(_metricIcon(log.type),
-                                  color: color, size: 20),
+                      return Dismissible(
+                        key: Key(log.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                          ),
+                          child: const Icon(Icons.delete_outline,
+                              color: Colors.white, size: 24),
+                        ),
+                        confirmDismiss: (_) => showConfirmationSheet(
+                          ctx,
+                          title: 'Delete Reading',
+                          message: 'Remove this ${log.type.label} reading?',
+                          confirmLabel: 'Delete',
+                          isDangerous: true,
+                        ),
+                        onDismissed: (_) {
+                          ref.read(healthLogProvider.notifier).deleteLog(log.id);
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(
+                              content: const Text('Reading deleted'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.danger,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(log.type.label,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: AppColors.textPrimary)),
-                                Text(_formatDt(log.recordedAt),
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppColors.textMuted)),
-                                if (log.notes.isNotEmpty)
-                                  Text(log.notes,
-                                      style: const TextStyle(
-                                          fontSize: 11, color: AppColors.textMuted),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                              ],
-                            )),
-                            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                              Text(log.displayValue,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 18,
-                                      color: color)),
-                              if (log.type.unit.isNotEmpty)
-                                Text(log.type.unit,
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppColors.textMuted)),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: AppCard(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            child: Row(children: [
                               Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                width: 44,
+                                height: 44,
                                 decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text(log.source,
-                                    style: const TextStyle(
-                                        fontSize: 9, color: AppColors.textMuted)),
+                                child: Icon(_metricIcon(log.type),
+                                    color: color, size: 20),
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(log.type.label,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: AppColors.textPrimary)),
+                                  Text(_formatDt(log.recordedAt),
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.textMuted)),
+                                  if (log.notes.isNotEmpty)
+                                    Text(log.notes,
+                                        style: const TextStyle(
+                                            fontSize: 11, color: AppColors.textMuted),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
+                                ],
+                              )),
+                              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                Text(log.displayValue,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                        color: color)),
+                                if (log.type.unit.isNotEmpty)
+                                  Text(log.type.unit,
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.textMuted)),
+                                const SizedBox(height: 6),
+                                Row(children: [
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(ctx,
+                                      MaterialPageRoute(
+                                          builder: (_) => EditHealthLogScreen(log: log))),
+                                    child: const Icon(Icons.edit_outlined,
+                                        size: 15, color: AppColors.textMuted),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final confirm = await showConfirmationSheet(ctx,
+                                        title: 'Delete Reading',
+                                        message: 'Remove this ${log.type.label} reading?',
+                                        confirmLabel: 'Delete',
+                                        isDangerous: true,
+                                      );
+                                      if (confirm == true) {
+                                        ref.read(healthLogProvider.notifier).deleteLog(log.id);
+                                      }
+                                    },
+                                    child: const Icon(Icons.delete_outline,
+                                        size: 15, color: AppColors.danger),
+                                  ),
+                                ]),
+                              ]),
                             ]),
-                          ]),
+                          ),
                         ),
                       );
                     },

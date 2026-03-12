@@ -4,6 +4,7 @@ import 'package:aayutrack/core/constants/app_constants.dart';
 import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
+import 'package:aayutrack/features/reports/presentation/screens/reports_screen.dart';
 
 class ComplianceOverviewScreen extends ConsumerWidget {
   const ComplianceOverviewScreen({super.key});
@@ -65,6 +66,8 @@ class ComplianceOverviewScreen extends ConsumerWidget {
           _buildAlerts(context, state, ref),
           const SizedBox(height: 16),
           _buildTips(),
+          const SizedBox(height: 16),
+          _buildDoctorSummary(context),
         ],
       ),
     );
@@ -188,6 +191,87 @@ class ComplianceOverviewScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDoctorSummary(BuildContext context) {
+    return AppCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.local_hospital_rounded,
+                color: Color(0xFF7C3AED), size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Share with Doctor',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: AppColors.textPrimary)),
+              Text('Send your compliance report to your healthcare provider',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        const Divider(color: AppColors.border, height: 1),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(
+            child: _SummaryPoint(
+              icon: Icons.medication_rounded,
+              color: AppColors.primary,
+              label: 'Medicine',
+              description: 'Adherence data',
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _SummaryPoint(
+              icon: Icons.monitor_heart_rounded,
+              color: AppColors.accent,
+              label: 'Vitals',
+              description: 'Trend charts',
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _SummaryPoint(
+              icon: Icons.warning_rounded,
+              color: AppColors.warning,
+              label: 'Alerts',
+              description: 'Risk flags',
+            ),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReportsScreen()),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md)),
+            ),
+            icon: const Icon(Icons.description_rounded, size: 18),
+            label: const Text('Generate Doctor Report',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _buildAlerts(BuildContext context, ComplianceState state, WidgetRef ref) {
     final unread = state.alerts.where((a) => !a.isRead).toList();
     if (unread.isEmpty) return const SizedBox.shrink();
@@ -304,6 +388,42 @@ class _ScoreHero extends StatelessWidget {
                     color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
           ],
         ),
+      ]),
+    );
+  }
+}
+
+class _SummaryPoint extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String description;
+
+  const _SummaryPoint({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Column(children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(height: 6),
+        Text(label,
+            style: TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 12, color: color)),
+        Text(description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
       ]),
     );
   }

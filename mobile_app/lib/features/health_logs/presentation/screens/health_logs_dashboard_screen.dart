@@ -5,6 +5,7 @@ import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/screens/metric_detail_screen.dart';
 import 'package:aayutrack/features/health_logs/presentation/screens/add_health_log_screen.dart';
 import 'package:aayutrack/features/health_logs/presentation/screens/health_log_history_screen.dart';
 
@@ -81,7 +82,7 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
                       color: color,
                       icon: _metricIcon(type),
                       onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const AddHealthLogScreen())),
+                          MaterialPageRoute(builder: (_) => MetricDetailScreen(metricType: type))),
                     );
                   }).toList(),
                 ),

@@ -4,6 +4,8 @@ import 'package:aayutrack/core/constants/app_constants.dart';
 import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/profile/presentation/providers/profile_provider.dart';
+import 'package:aayutrack/features/reminders/presentation/screens/notification_settings_screen.dart';
+import 'package:aayutrack/features/reports/presentation/screens/reports_screen.dart';
 import 'package:aayutrack/features/profile/presentation/providers/profile_state.dart';
 import 'package:aayutrack/features/profile/presentation/widgets/profile_info_card.dart';
 
@@ -232,6 +234,59 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                     ref.read(profileProvider.notifier).loadProfile();
                   },
                 ),
+                const SizedBox(height: 20),
+
+                // Settings section
+                ProfileInfoCard(
+                  title: 'Settings',
+                  icon: Icons.settings_rounded,
+                  children: [
+                    _SettingRow(
+                      icon: Icons.notifications_rounded,
+                      iconColor: AppColors.accent,
+                      label: 'Notification Settings',
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotificationSettingsScreen())),
+                    ),
+                    const Divider(color: AppColors.border, height: 1),
+                    _SettingRow(
+                      icon: Icons.description_rounded,
+                      iconColor: AppColors.primary,
+                      label: 'Generate Health Report',
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const ReportsScreen())),
+                    ),
+                    const Divider(color: AppColors.border, height: 1),
+                    _SettingRow(
+                      icon: Icons.verified_rounded,
+                      iconColor: const Color(0xFF7C3AED),
+                      label: 'View Compliance Overview',
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.complianceOverview),
+                    ),
+                  ],
+                ),
+
+                // App info card
+                ProfileInfoCard(
+                  title: 'About',
+                  icon: Icons.info_outline_rounded,
+                  children: [
+                    _infoRow('App Name', 'AAYUTRACK'),
+                    const Divider(color: AppColors.border, height: 20),
+                    _infoRow('Version', '1.0.0'),
+                    const Divider(color: AppColors.border, height: 20),
+                    _infoRow('Type', 'Patient Mobile App'),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Digital Compliance & Remote Patient Monitoring Platform. For medical questions, always consult your healthcare provider.',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                          height: 1.5),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 80),
               ],
             ),
@@ -252,6 +307,52 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
               fontWeight: FontWeight.w600,
               fontSize: 13)),
     ]);
+  }
+}
+
+class _SettingRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SettingRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.textPrimary)),
+          ),
+          const Icon(Icons.chevron_right_rounded,
+              size: 18, color: AppColors.textMuted),
+        ]),
+      ),
+    );
   }
 }
 
