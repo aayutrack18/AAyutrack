@@ -1,17 +1,36 @@
 import 'package:drift/drift.dart';
 
+import 'daos/dose_logs_dao.dart';
+import 'daos/medicines_dao.dart';
+import 'daos/reminders_dao.dart';
 import 'database_connection.dart';
+import 'tables/dose_logs.dart';
+import 'tables/medicines.dart';
 import 'tables/patient_profiles.dart';
+import 'tables/reminders.dart';
 import 'tables/sync_queue.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [PatientProfiles, SyncQueue])
+@DriftDatabase(
+  tables: [
+    PatientProfiles,
+    SyncQueue,
+    Medicines,
+    Reminders,
+    DoseLogs,
+  ],
+  daos: [
+    MedicinesDao,
+    RemindersDao,
+    DoseLogsDao,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -21,6 +40,22 @@ class AppDatabase extends _$AppDatabase {
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
             await m.createTable(syncQueue);
+          }
+
+          if (from < 3) {
+            await m.createTable(medicines);
+            await m.createTable(reminders);
+            await m.createTable(doseLogs);
+          }
+
+          if (from >= 3 && from < 4) {
+            await m.addColumn(medicines, medicines.frequency);
+            await m.addColumn(medicines, medicines.scheduledTimes);
+            await m.addColumn(medicines, medicines.color);
+          }
+
+          if (from >= 4 && from < 5) {
+            await m.addColumn(reminders, reminders.reminderType);
           }
         },
       );
@@ -87,8 +122,8 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> incrementSyncRetryCount(String id) async {
-    final item =
-        await (select(syncQueue)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    final item = await (select(syncQueue)..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
 
     if (item == null) return;
 

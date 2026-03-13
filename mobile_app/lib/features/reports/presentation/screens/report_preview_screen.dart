@@ -9,6 +9,7 @@ import 'package:aayutrack/features/health_logs/presentation/providers/health_log
 import 'package:aayutrack/features/medicine/presentation/providers/medicine_provider.dart';
 import 'package:aayutrack/features/profile/presentation/providers/profile_provider.dart';
 import 'package:aayutrack/features/reports/presentation/providers/reports_provider.dart';
+import 'package:aayutrack/features/reports/presentation/screens/report_pdf_design_screen.dart';
 
 class ReportPreviewScreen extends ConsumerWidget {
   const ReportPreviewScreen({super.key});
@@ -154,36 +155,37 @@ class ReportPreviewScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             AppButton(
-              label: reportsState.isExporting
-                  ? 'Generating PDF…'
-                  : 'Export as PDF',
+              label: 'Design & Export PDF',
               icon: Icons.picture_as_pdf_rounded,
               isLoading: reportsState.isExporting,
               onPressed: reportsState.isExporting
                   ? null
-                  : () async {
-                      await ref
-                          .read(reportsProvider.notifier)
-                          .generateReport();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(children: [
-                              Icon(Icons.picture_as_pdf_rounded,
-                                  color: Colors.white, size: 18),
-                              SizedBox(width: 10),
-                              Expanded(
-                                  child: Text('PDF exported to your device')),
-                            ]),
-                            backgroundColor: AppColors.success,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
-                        Navigator.pop(context);
-                      }
-                    },
+                  : () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ReportPdfDesignScreen()),
+                      ),
+            ),
+            const SizedBox(height: 10),
+            AppButton(
+              label: 'Share Report',
+              icon: Icons.share_rounded,
+              outlined: true,
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Row(children: [
+                      Icon(Icons.share_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 10),
+                      Text('Preparing report for sharing…'),
+                    ]),
+                    backgroundColor: AppColors.primary,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              },
             ),
           ],
         ),

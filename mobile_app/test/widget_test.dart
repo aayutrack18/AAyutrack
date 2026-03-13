@@ -1,15 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aayutrack/main.dart';
 
 void main() {
-  testWidgets('App builds successfully', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MyApp(),
-      ),
-    );
-
+  testWidgets('app builds successfully', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
     expect(find.byType(MyApp), findsOneWidget);
   });
 }

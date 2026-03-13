@@ -1,14 +1,40 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aayutrack/features/reminders/data/datasources/reminder_mock_datasource.dart';
-import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 
-final reminderDataSourceProvider = Provider<ReminderMockDataSource>((ref) {
-  return ReminderMockDataSource();
+import 'package:aayutrack/core/database/app_database.dart' as db;
+import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/features/reminders/data/datasources/reminder_local_datasource.dart';
+import 'package:aayutrack/features/reminders/data/repositories/reminder_repository_impl.dart';
+import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
+import 'package:aayutrack/features/reminders/domain/repositories/reminder_repository.dart';
+
+final reminderDatabaseProvider = Provider<db.AppDatabase>((ref) {
+  final database = db.AppDatabase();
+  ref.onDispose(database.close);
+  return database;
+});
+
+final reminderSyncQueueServiceProvider = Provider<SyncQueueService>((ref) {
+  final database = ref.watch(reminderDatabaseProvider);
+  return SyncQueueService(database);
+});
+
+final reminderLocalDataSourceProvider = Provider<ReminderLocalDataSource>((ref) {
+  final database = ref.watch(reminderDatabaseProvider);
+  return ReminderLocalDataSource(
+    remindersDao: database.remindersDao,
+  );
+});
+
+final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
+  return ReminderRepositoryImpl(
+    localDataSource: ref.watch(reminderLocalDataSourceProvider),
+    syncQueueService: ref.watch(reminderSyncQueueServiceProvider),
+  );
 });
 
 final reminderProvider =
     StateNotifierProvider<ReminderNotifier, ReminderState>((ref) {
-  return ReminderNotifier(ref.watch(reminderDataSourceProvider));
+  return ReminderNotifier(ref.watch(reminderRepositoryProvider));
 });
 
 class ReminderState {
@@ -45,16 +71,16 @@ class ReminderState {
 }
 
 class ReminderNotifier extends StateNotifier<ReminderState> {
-  final ReminderMockDataSource _ds;
+  final ReminderRepository _repository;
 
-  ReminderNotifier(this._ds) : super(ReminderState.initial()) {
+  ReminderNotifier(this._repository) : super(ReminderState.initial()) {
     loadReminders();
   }
 
   Future<void> loadReminders() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final reminders = await _ds.getReminders();
+      final reminders = await _repository.getReminders();
       state = state.copyWith(isLoading: false, reminders: reminders);
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
@@ -63,7 +89,7 @@ class ReminderNotifier extends StateNotifier<ReminderState> {
 
   Future<void> addReminder(Reminder reminder) async {
     try {
-      await _ds.saveReminder(reminder);
+      await _repository.saveReminder(reminder);
       await loadReminders();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());
@@ -72,7 +98,7 @@ class ReminderNotifier extends StateNotifier<ReminderState> {
 
   Future<void> updateReminder(Reminder reminder) async {
     try {
-      await _ds.updateReminder(reminder);
+      await _repository.updateReminder(reminder);
       await loadReminders();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());
@@ -81,7 +107,7 @@ class ReminderNotifier extends StateNotifier<ReminderState> {
 
   Future<void> deleteReminder(String id) async {
     try {
-      await _ds.deleteReminder(id);
+      await _repository.deleteReminder(id);
       await loadReminders();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());
@@ -90,7 +116,7 @@ class ReminderNotifier extends StateNotifier<ReminderState> {
 
   Future<void> toggleReminder(String id, bool isEnabled) async {
     try {
-      await _ds.toggleReminder(id, isEnabled);
+      await _repository.toggleReminder(id, isEnabled);
       await loadReminders();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());

@@ -1,17 +1,37 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aayutrack/features/medicine/data/datasources/medicine_mock_datasource.dart';
+
+import 'package:aayutrack/core/database/app_database.dart' as db;
+import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/features/medicine/data/datasources/medicine_local_datasource.dart';
 import 'package:aayutrack/features/medicine/data/repositories/medicine_repository_impl.dart';
 import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
 import 'package:aayutrack/features/medicine/domain/repositories/medicine_repository.dart';
 
-// ─── PROVIDERS ────────────────────────────────────────────────────────────────
+// ─── INFRASTRUCTURE PROVIDERS ────────────────────────────────────────────────
 
-final medicineMockDataSourceProvider = Provider<MedicineMockDataSource>((ref) {
-  return MedicineMockDataSource();
+final appDatabaseProvider = Provider<db.AppDatabase>((ref) {
+  final database = db.AppDatabase();
+  ref.onDispose(database.close);
+  return database;
+});
+
+final syncQueueServiceProvider = Provider<SyncQueueService>((ref) {
+  final database = ref.watch(appDatabaseProvider);
+  return SyncQueueService(database);
+});
+
+final medicineLocalDataSourceProvider = Provider<MedicineLocalDataSource>((ref) {
+  final database = ref.watch(appDatabaseProvider);
+  return MedicineLocalDataSource(
+    medicinesDao: database.medicinesDao,
+  );
 });
 
 final medicineRepositoryProvider = Provider<MedicineRepository>((ref) {
-  return MedicineRepositoryImpl(ref.watch(medicineMockDataSourceProvider));
+  return MedicineRepositoryImpl(
+    localDataSource: ref.watch(medicineLocalDataSourceProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
+  );
 });
 
 final medicineProvider =
@@ -19,7 +39,7 @@ final medicineProvider =
   return MedicineNotifier(ref.watch(medicineRepositoryProvider));
 });
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
+// ─── STATE ───────────────────────────────────────────────────────────────────
 
 class MedicineState {
   final bool isLoading;
@@ -59,7 +79,7 @@ class MedicineState {
   bool get hasError => errorMessage != null;
 }
 
-// ─── NOTIFIER ─────────────────────────────────────────────────────────────────
+// ─── NOTIFIER ────────────────────────────────────────────────────────────────
 
 class MedicineNotifier extends StateNotifier<MedicineState> {
   final MedicineRepository _repository;
