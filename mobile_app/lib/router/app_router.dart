@@ -23,6 +23,7 @@ import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 import 'package:aayutrack/features/reminders/presentation/screens/add_reminder_screen.dart';
 import 'package:aayutrack/features/reminders/presentation/screens/edit_reminder_screen.dart';
 import 'package:aayutrack/features/reminders/presentation/screens/reminder_list_screen.dart';
+import 'package:aayutrack/features/reports/presentation/screens/report_pdf_design_screen.dart';
 import 'package:aayutrack/features/reports/presentation/screens/report_preview_screen.dart';
 import 'package:aayutrack/features/reports/presentation/screens/reports_screen.dart';
 import 'package:aayutrack/features/shell/presentation/main_shell.dart';
@@ -96,6 +97,8 @@ class AppRouter {
         return _slide(const ReportsScreen(), settings);
       case AppRoutes.reportPreview:
         return _slide(const ReportPreviewScreen(), settings);
+      case AppRoutes.reportPdfDesign:
+        return _slide(const ReportPdfDesignScreen(), settings);
       case AppRoutes.notificationSettings:
         return _slide(const NotificationSettingsScreen(), settings);
       case AppRoutes.editHealthLog:

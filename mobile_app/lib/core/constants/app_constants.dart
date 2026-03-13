@@ -48,6 +48,7 @@ class AppRoutes {
   // Reports
   static const String reports = '/reports';
   static const String reportPreview = '/reports/preview';
+  static const String reportPdfDesign = '/reports/pdf-design';
 }
 
 class AppSpacing {
