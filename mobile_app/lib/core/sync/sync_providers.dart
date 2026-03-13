@@ -7,7 +7,9 @@ import 'profile_sync_service.dart';
 import 'sync_queue_service.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  return AppDatabase();
+  final database = AppDatabase();
+  ref.onDispose(database.close);
+  return database;
 });
 
 final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -29,10 +31,18 @@ final profileSyncServiceProvider = Provider<ProfileSyncService>((ref) {
   final firestore = ref.watch(firebaseFirestoreProvider);
   final connectivity = ref.watch(connectivityProvider);
 
-  return ProfileSyncService(
+  final service = ProfileSyncService(
     database: database,
     syncQueueService: syncQueueService,
     firestore: firestore,
     connectivity: connectivity,
   );
+
+  service.startAutoSync();
+
+  ref.onDispose(() {
+    service.stopAutoSync();
+  });
+
+  return service;
 });

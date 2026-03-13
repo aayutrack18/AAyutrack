@@ -1,13 +1,16 @@
-import 'package:aayutrack/features/profile/domain/entities/patient_profile.dart';
-import 'package:aayutrack/features/profile/domain/repositories/profile_repository.dart';
+import 'package:aayutrack/core/sync/sync_queue_service.dart';
 import 'package:aayutrack/features/profile/data/datasources/profile_local_datasource.dart';
 import 'package:aayutrack/features/profile/data/models/patient_profile_model.dart';
+import 'package:aayutrack/features/profile/domain/entities/patient_profile.dart';
+import 'package:aayutrack/features/profile/domain/repositories/profile_repository.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileLocalDataSource localDataSource;
+  final SyncQueueService syncQueueService;
 
   const ProfileRepositoryImpl({
     required this.localDataSource,
+    required this.syncQueueService,
   });
 
   @override
@@ -19,18 +22,50 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> saveProfile(PatientProfile profile) async {
     final model = _toModel(profile);
+
     await localDataSource.saveProfile(model);
+    await localDataSource.markProfileAsPendingSync();
+
+    await syncQueueService.enqueue(
+      entityType: 'patient_profile',
+      entityId: model.profileId,
+      operation: 'upsert',
+      payload: _profilePayload(model),
+    );
   }
 
   @override
   Future<void> updateProfile(PatientProfile profile) async {
     final model = _toModel(profile);
+
     await localDataSource.updateProfile(model);
+    await localDataSource.markProfileAsPendingSync();
+
+    await syncQueueService.enqueue(
+      entityType: 'patient_profile',
+      entityId: model.profileId,
+      operation: 'upsert',
+      payload: _profilePayload(model),
+    );
   }
 
   @override
   Future<void> deleteProfile() async {
+    final existingProfile = await localDataSource.getProfile();
+
+    if (existingProfile == null) return;
+
     await localDataSource.deleteProfile();
+
+    await syncQueueService.enqueue(
+      entityType: 'patient_profile',
+      entityId: existingProfile.profileId,
+      operation: 'delete',
+      payload: {
+        'profileId': existingProfile.profileId,
+        'userId': existingProfile.userId,
+      },
+    );
   }
 
   @override
@@ -73,5 +108,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
       updatedAt: profile.updatedAt,
       isSynced: profile.isSynced,
     );
+  }
+
+  Map<String, dynamic> _profilePayload(PatientProfileModel model) {
+    return {
+      'profileId': model.profileId,
+      'userId': model.userId,
+      'fullName': model.fullName,
+      'age': model.age,
+      'gender': model.gender,
+      'phoneNumber': model.phoneNumber,
+      'email': model.email,
+      'bloodGroup': model.bloodGroup,
+      'heightCm': model.heightCm,
+      'weightKg': model.weightKg,
+      'address': model.address,
+      'allergies': model.allergies,
+      'medicalConditions': model.medicalConditions,
+      'emergencyContactName': model.emergencyContactName,
+      'emergencyContactPhone': model.emergencyContactPhone,
+      'createdAt': model.createdAt.toIso8601String(),
+      'updatedAt': model.updatedAt.toIso8601String(),
+      'isSynced': model.isSynced,
+    };
   }
 }

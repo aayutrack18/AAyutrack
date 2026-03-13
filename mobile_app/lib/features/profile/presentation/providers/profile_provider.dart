@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/sync/profile_sync_service.dart';
@@ -15,9 +16,11 @@ final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final localDataSource = ref.watch(profileLocalDataSourceProvider);
+  final syncQueueService = ref.watch(syncQueueServiceProvider);
 
   return ProfileRepositoryImpl(
     localDataSource: localDataSource,
+    syncQueueService: syncQueueService,
   );
 });
 
@@ -59,9 +62,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       final profile = await _repository.getProfile();
 
-      print('========== LOCAL SQLITE PROFILE ==========');
-      print(profile);
-      print('=========================================');
+      debugPrint('========== LOCAL SQLITE PROFILE ==========');
+      debugPrint('$profile');
+      debugPrint('=========================================');
 
       state = state.copyWith(
         isLoading: false,
@@ -85,14 +88,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     try {
       await _repository.saveProfile(profile);
-      await _repository.markProfileAsPendingSync();
       await _syncService.syncPendingProfileItems();
 
       final latestProfile = await _repository.getProfile();
 
-      print('========== PROFILE CREATED / SAVED ==========');
-      print(latestProfile);
-      print('============================================');
+      debugPrint('========== PROFILE CREATED / SAVED ==========');
+      debugPrint('$latestProfile');
+      debugPrint('============================================');
 
       state = state.copyWith(
         isLoading: false,
@@ -116,14 +118,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     try {
       await _repository.updateProfile(profile);
-      await _repository.markProfileAsPendingSync();
       await _syncService.syncPendingProfileItems();
 
       final latestProfile = await _repository.getProfile();
 
-      print('========== PROFILE UPDATED ==========');
-      print(latestProfile);
-      print('====================================');
+      debugPrint('========== PROFILE UPDATED ==========');
+      debugPrint('$latestProfile');
+      debugPrint('====================================');
 
       state = state.copyWith(
         isLoading: false,
@@ -195,9 +196,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       final latestProfile = await _repository.getProfile();
 
-      print('========== PROFILE REFRESH ==========');
-      print(latestProfile);
-      print('====================================');
+      debugPrint('========== PROFILE REFRESH ==========');
+      debugPrint('$latestProfile');
+      debugPrint('====================================');
 
       state = state.copyWith(
         profile: latestProfile,
@@ -216,9 +217,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       await _syncService.syncPendingProfileItems();
       final latestProfile = await _repository.getProfile();
 
-      print('========== PROFILE SYNC NOW ==========');
-      print(latestProfile);
-      print('=====================================');
+      debugPrint('========== PROFILE SYNC NOW ==========');
+      debugPrint('$latestProfile');
+      debugPrint('=====================================');
 
       state = state.copyWith(
         profile: latestProfile,

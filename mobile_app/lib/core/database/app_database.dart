@@ -6,21 +6,24 @@ import 'tables/sync_queue.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
-  tables: [
-    PatientProfiles,
-    SyncQueue,
-  ],
-)
+@DriftDatabase(tables: [PatientProfiles, SyncQueue])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
-  // ---------------------------------------------------------------------------
-  // Patient Profile
-  // ---------------------------------------------------------------------------
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (Migrator m) async {
+          await m.createAll();
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          if (from < 2) {
+            await m.createTable(syncQueue);
+          }
+        },
+      );
 
   Future<void> insertOrUpdatePatientProfile(
     PatientProfilesCompanion profile,
@@ -29,8 +32,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<PatientProfile?> getPatientProfileByUserId(String userId) {
-    return (select(patientProfiles)
-          ..where((tbl) => tbl.userId.equals(userId)))
+    return (select(patientProfiles)..where((tbl) => tbl.userId.equals(userId)))
         .getSingleOrNull();
   }
 
@@ -59,14 +61,8 @@ class AppDatabase extends _$AppDatabase {
     return rowsDeleted > 0;
   }
 
-  // ---------------------------------------------------------------------------
-  // Sync Queue
-  // ---------------------------------------------------------------------------
-
-  Future<void> addToSyncQueue(
-    SyncQueueCompanion syncItem,
-  ) async {
-    await into(syncQueue).insert(syncItem);
+  Future<void> addToSyncQueue(SyncQueueCompanion item) async {
+    await into(syncQueue).insertOnConflictUpdate(item);
   }
 
   Future<List<SyncQueueData>> getPendingSyncItems() {
@@ -76,59 +72,31 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  Future<List<SyncQueueData>> getFailedSyncItems() {
-    return (select(syncQueue)
-          ..where((tbl) => tbl.status.equals('failed'))
-          ..orderBy([(tbl) => OrderingTerm.asc(tbl.createdAt)]))
-        .get();
-  }
-
-  Future<SyncQueueData?> getSyncQueueItemById(String id) {
-    return (select(syncQueue)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
-  }
-
-  Future<bool> updateSyncQueueStatus({
+  Future<void> updateSyncQueueStatus({
     required String id,
     required String status,
     String? errorMessage,
-    int? retryCount,
   }) async {
-    final rowsUpdated =
-        await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
+    await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
       SyncQueueCompanion(
         status: Value(status),
         errorMessage: Value(errorMessage),
-        retryCount: retryCount != null ? Value(retryCount) : const Value.absent(),
         updatedAt: Value(DateTime.now()),
       ),
     );
-
-    return rowsUpdated > 0;
   }
 
-  Future<bool> incrementSyncRetryCount(String id) async {
-    final existing = await getSyncQueueItemById(id);
-    if (existing == null) return false;
+  Future<void> incrementSyncRetryCount(String id) async {
+    final item =
+        await (select(syncQueue)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 
-    final rowsUpdated =
-        await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
+    if (item == null) return;
+
+    await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
       SyncQueueCompanion(
-        retryCount: Value(existing.retryCount + 1),
+        retryCount: Value(item.retryCount + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );
-
-    return rowsUpdated > 0;
-  }
-
-  Future<bool> deleteSyncQueueItem(String id) async {
-    final rowsDeleted =
-        await (delete(syncQueue)..where((tbl) => tbl.id.equals(id))).go();
-    return rowsDeleted > 0;
-  }
-
-  Future<void> clearSyncedQueueItems() async {
-    await (delete(syncQueue)..where((tbl) => tbl.status.equals('synced'))).go();
   }
 }
