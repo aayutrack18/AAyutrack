@@ -1,0 +1,49 @@
+{
+    "project_info": {
+        "project_number": "969513127632",
+        "firebase_url": "https://aayutrack-f949a-default-rtdb.firebaseio.com",
+        "project_id": "aayutrack-f949a",
+        "storage_bucket": "aayutrack-f949a.firebasestorage.app"
+    },
+    "client": [{
+        "client_info": {
+            "mobilesdk_app_id": "1:969513127632:android:449e2530afce9c4fe958d5",
+            "android_client_info": {
+                "package_name": "com.example.mobile_app"
+            }
+        },
+        "oauth_client": [{
+                "client_id": "969513127632-68f42hckjo21a19cvn1rnqgpta25nsuk.apps.googleusercontent.com",
+                "client_type": 1,
+                "android_info": {
+                    "package_name": "com.example.mobile_app",
+                    "certificate_hash": "bf3b48da164af3b5b98cd0000ea66d3238edc333"
+                }
+            },
+            {
+                "client_id": "969513127632-n1qlvkm2e51tu7vsrdj9mfl3255o11ur.apps.googleusercontent.com",
+                "client_type": 3
+            }
+        ],
+        "api_key": [{
+            "current_key": "AIzaSyDTLYYfIdKMQm9XU0tEHNLB3vkeqvB_WWE"
+        }],
+        "services": {
+            "appinvite_service": {
+                "other_platform_oauth_client": [{
+                        "client_id": "969513127632-n1qlvkm2e51tu7vsrdj9mfl3255o11ur.apps.googleusercontent.com",
+                        "client_type": 3
+                    },
+                    {
+                        "client_id": "969513127632-2l6esjepp7jqqm440h4efqjra90tl034.apps.googleusercontent.com",
+                        "client_type": 2,
+                        "ios_info": {
+                            "bundle_id": "com.example.mobileApp"
+                        }
+                    }
+                ]
+            }
+        }
+    }],
+    "configuration_version": "1"
+}

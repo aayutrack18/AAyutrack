@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="AAYUTRACK – Digital Compliance & Remote Patient Monitoring">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="AAYUTRACK">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>AAYUTRACK</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- ── Firebase JS SDK (required for Phone Auth + reCAPTCHA on web) ── -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <script>
+    // Initialize Firebase with your web config
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAjfuGdLehUgMadBAAbMmGx_A8Dppcgt7o",
+      authDomain:        "aayutrack-f949a.firebaseapp.com",
+      databaseURL:       "https://aayutrack-f949a-default-rtdb.firebaseio.com",
+      projectId:         "aayutrack-f949a",
+      storageBucket:     "aayutrack-f949a.firebasestorage.app",
+      messagingSenderId: "969513127632",
+      appId:             "1:969513127632:web:fafa9d50361745a9e958d5",
+      measurementId:     "G-HD34MYE5KP"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <style>
+    /* Hidden reCAPTCHA container — Firebase renders it invisibly here */
+    #recaptcha-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- reCAPTCHA anchor required by Firebase Phone Auth on web -->
+  <div id="recaptcha-container"></div>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
