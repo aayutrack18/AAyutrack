@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aayutrack/core/constants/app_constants.dart';
+import 'package:aayutrack/core/intelligence/compliance_score_service.dart';
+import 'package:aayutrack/core/intelligence/intelligence_providers.dart';
+import 'package:aayutrack/core/intelligence/risk_detection_service.dart';
 import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
-import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
 import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
 import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
 import 'package:aayutrack/features/health_logs/presentation/screens/add_health_log_screen.dart';
@@ -25,10 +27,27 @@ class DashboardScreen extends ConsumerWidget {
     final now = DateTime.now();
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
+  String _scoreLabel(double score) {
+    if (score >= 90) return 'Excellent';
+    if (score >= 80) return 'Good';
+    if (score >= 60) return 'Fair';
+    return 'Needs Attention';
   }
 
   @override
@@ -37,16 +56,24 @@ class DashboardScreen extends ConsumerWidget {
     final medicineState = ref.watch(medicineProvider);
     final reminderState = ref.watch(reminderProvider);
     final healthState = ref.watch(healthLogProvider);
-    final complianceState = ref.watch(complianceProvider);
 
-    final name =
-        profileState.profile?.fullName.split(' ').first ?? 'there';
+    final complianceSummary = ref.watch(complianceSummaryProvider);
+    final riskAlerts = ref.watch(riskAlertsProvider);
+    final intelligenceLoading = ref.watch(intelligenceLoadingProvider);
+
+    final name = profileState.profile?.fullName.split(' ').first ?? 'there';
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          _buildSliverHeader(context, name, complianceState),
+          _buildSliverHeader(
+            context,
+            name,
+            complianceSummary,
+            riskAlerts.length,
+            intelligenceLoading,
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -57,13 +84,18 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                   _buildTodayMedicines(context, medicineState),
                   const SizedBox(height: 20),
-                  _buildComplianceCard(context, complianceState),
+                  _buildComplianceCard(
+                    context,
+                    complianceSummary,
+                    riskAlerts.length,
+                    intelligenceLoading,
+                  ),
                   const SizedBox(height: 20),
                   _buildTodayReminders(context, reminderState),
                   const SizedBox(height: 20),
                   _buildHealthSummary(context, healthState),
                   const SizedBox(height: 20),
-                  _buildAlerts(context, complianceState),
+                  _buildAlerts(context, riskAlerts),
                 ],
               ),
             ),
@@ -74,7 +106,14 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildSliverHeader(
-      BuildContext context, String name, ComplianceState compliance) {
+    BuildContext context,
+    String name,
+    ComplianceSummary complianceSummary,
+    int alertCount,
+    bool intelligenceLoading,
+  ) {
+    final score = intelligenceLoading ? 0.0 : complianceSummary.complianceScore;
+
     return SliverAppBar(
       expandedHeight: 160,
       floating: true,
@@ -123,31 +162,58 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pushNamed(
-                            context, AppRoutes.complianceOverview),
+                          context,
+                          AppRoutes.complianceOverview,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.25)),
+                              color: Colors.white.withOpacity(0.25),
+                            ),
                           ),
                           child: Column(
                             children: [
-                              Text(
-                                '${compliance.overallScore.toInt()}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                              intelligenceLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      '${score.toInt()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
                               const Text(
                                 'Compliance',
                                 style: TextStyle(
-                                    color: Colors.white70, fontSize: 10),
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
                               ),
+                              if (!intelligenceLoading && alertCount > 0)
+                                Text(
+                                  '$alertCount alerts',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 9,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -216,8 +282,7 @@ class DashboardScreen extends ConsumerWidget {
         SectionHeader(
           title: "Today's Medicines",
           actionLabel: 'View All',
-          onAction: () =>
-              Navigator.pushNamed(context, AppRoutes.medicineList),
+          onAction: () => Navigator.pushNamed(context, AppRoutes.medicineList),
         ),
         const SizedBox(height: 12),
         if (medState.isLoading)
@@ -226,11 +291,15 @@ class DashboardScreen extends ConsumerWidget {
           AppCard(
             child: Row(
               children: [
-                const Icon(Icons.medication_outlined,
-                    color: AppColors.textMuted),
+                const Icon(
+                  Icons.medication_outlined,
+                  color: AppColors.textMuted,
+                ),
                 const SizedBox(width: 12),
-                const Text('No active medicines',
-                    style: TextStyle(color: AppColors.textMuted)),
+                const Text(
+                  'No active medicines',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
               ],
             ),
           )
@@ -240,8 +309,10 @@ class DashboardScreen extends ConsumerWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: AppCard(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -251,34 +322,42 @@ class DashboardScreen extends ConsumerWidget {
                         color: color.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.tablet_rounded,
-                          color: color, size: 18),
+                      child: Icon(
+                        Icons.tablet_rounded,
+                        color: color,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(m.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  color: AppColors.textPrimary)),
-                          Text('${m.dosage} · ${m.frequency}',
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textMuted)),
+                          Text(
+                            m.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            '${m.dosage} · ${m.frequency}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Text(
-                      m.scheduledTimes.isNotEmpty
-                          ? m.scheduledTimes.first
-                          : '',
+                      m.scheduledTimes.isNotEmpty ? m.scheduledTimes.first : '',
                       style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                          fontSize: 13),
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -290,10 +369,16 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildComplianceCard(
-      BuildContext context, ComplianceState compliance) {
+    BuildContext context,
+    ComplianceSummary complianceSummary,
+    int alertCount,
+    bool intelligenceLoading,
+  ) {
+    final score = intelligenceLoading ? 0.0 : complianceSummary.complianceScore;
+    final label = intelligenceLoading ? 'Loading...' : _scoreLabel(score);
+
     return GestureDetector(
-      onTap: () =>
-          Navigator.pushNamed(context, AppRoutes.complianceOverview),
+      onTap: () => Navigator.pushNamed(context, AppRoutes.complianceOverview),
       child: GradientCard(
         colors: const [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -303,32 +388,60 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Compliance Score',
-                      style: TextStyle(
-                          color: Colors.white70, fontSize: 12)),
-                  Text(
-                    '${compliance.overallScore.toInt()}% · ${compliance.scoreLabel}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                  const Text(
+                    'Compliance Score',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
                     ),
                   ),
+                  intelligenceLoading
+                      ? const Padding(
+                          padding: EdgeInsets.only(top: 6),
+                          child: SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          '${score.toInt()}% · $label',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                   const SizedBox(height: 8),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: compliance.overallScore / 100,
+                      value: intelligenceLoading ? 0 : (score / 100),
                       backgroundColor: Colors.white.withOpacity(0.2),
                       color: Colors.white,
                       minHeight: 6,
                     ),
                   ),
+                  if (!intelligenceLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${complianceSummary.takenCount}/${complianceSummary.totalScheduled} doses taken this period',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
             const SizedBox(width: 16),
-            if (compliance.unreadAlertCount > 0)
+            if (!intelligenceLoading && alertCount > 0)
               Column(
                 children: [
                   Container(
@@ -338,16 +451,21 @@ class DashboardScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      '${compliance.unreadAlertCount}',
+                      '$alertCount',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text('Alerts',
-                      style:
-                          TextStyle(color: Colors.white70, fontSize: 10)),
+                  const Text(
+                    'Alerts',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                    ),
+                  ),
                 ],
               ),
           ],
@@ -357,7 +475,9 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildTodayReminders(
-      BuildContext context, ReminderState reminderState) {
+    BuildContext context,
+    ReminderState reminderState,
+  ) {
     final enabled = reminderState.enabledReminders.take(3).toList();
 
     return Column(
@@ -366,8 +486,7 @@ class DashboardScreen extends ConsumerWidget {
         SectionHeader(
           title: "Today's Reminders",
           actionLabel: 'View All',
-          onAction: () =>
-              Navigator.pushNamed(context, AppRoutes.reminderList),
+          onAction: () => Navigator.pushNamed(context, AppRoutes.reminderList),
         ),
         const SizedBox(height: 12),
         if (enabled.isEmpty)
@@ -376,38 +495,53 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.alarm_off_rounded, color: AppColors.textMuted),
                 SizedBox(width: 12),
-                Text('No reminders set',
-                    style: TextStyle(color: AppColors.textMuted)),
+                Text(
+                  'No reminders set',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
               ],
             ),
           )
         else
-          ...enabled.map((r) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: AppCard(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.alarm_rounded,
-                          color: AppColors.primary, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(r.title,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: AppColors.textPrimary)),
-                      ),
-                      Text(r.time,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                              fontSize: 14)),
-                    ],
-                  ),
+          ...enabled.map(
+            (r) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-              )),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.alarm_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        r.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      r.time,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -468,7 +602,8 @@ class DashboardScreen extends ConsumerWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const AddHealthLogScreen()),
+                    builder: (_) => const AddHealthLogScreen(),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,20 +614,28 @@ class DashboardScreen extends ConsumerWidget {
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.add_rounded,
-                          color: AppColors.primary, size: 18),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const Text(
                       'Log',
                       style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: AppColors.textPrimary),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                    const Text('New reading',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
+                    const Text(
+                      'New reading',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -503,10 +646,9 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAlerts(BuildContext context, ComplianceState compliance) {
-    final unread =
-        compliance.alerts.where((a) => !a.isRead).take(2).toList();
-    if (unread.isEmpty) return const SizedBox.shrink();
+  Widget _buildAlerts(BuildContext context, List<RiskAlert> riskAlerts) {
+    final visibleAlerts = riskAlerts.take(2).toList();
+    if (visibleAlerts.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,16 +656,16 @@ class DashboardScreen extends ConsumerWidget {
         SectionHeader(
           title: 'Risk Alerts',
           actionLabel: 'View All',
-          onAction: () =>
-              Navigator.pushNamed(context, AppRoutes.riskAlerts),
+          onAction: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
         ),
         const SizedBox(height: 12),
-        ...unread.map((alert) {
+        ...visibleAlerts.map((alert) {
           final color = alert.severity == 'high'
               ? AppColors.danger
               : alert.severity == 'medium'
                   ? const Color(0xFFF59E0B)
                   : AppColors.accent;
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: AppCard(
@@ -548,13 +690,16 @@ class DashboardScreen extends ConsumerWidget {
                     child: Text(
                       alert.title,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: AppColors.textPrimary),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   StatusChip(
-                      label: alert.severity.toUpperCase(), color: color),
+                    label: alert.severity.toUpperCase(),
+                    color: color,
+                  ),
                 ],
               ),
             ),
@@ -615,9 +760,10 @@ class _QuickActionButton extends StatelessWidget {
               action.label,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500),
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

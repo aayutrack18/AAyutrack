@@ -17,9 +17,6 @@ Future<void> main() async {
 
   final container = ProviderContainer();
 
-  // Start sync listeners immediately
-  container.read(profileSyncServiceProvider);
-
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -28,8 +25,22 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
+
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      await ref.read(appStartupSyncProvider);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

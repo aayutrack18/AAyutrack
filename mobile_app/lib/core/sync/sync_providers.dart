@@ -3,7 +3,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import 'dose_log_sync_service.dart';
+import 'medicine_sync_service.dart';
 import 'profile_sync_service.dart';
+import 'reminder_sync_service.dart';
 import 'sync_queue_service.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -21,28 +24,52 @@ final connectivityProvider = Provider<Connectivity>((ref) {
 });
 
 final syncQueueServiceProvider = Provider<SyncQueueService>((ref) {
-  final database = ref.watch(appDatabaseProvider);
-  return SyncQueueService(database);
+  return SyncQueueService(ref.watch(appDatabaseProvider));
 });
 
 final profileSyncServiceProvider = Provider<ProfileSyncService>((ref) {
-  final database = ref.watch(appDatabaseProvider);
-  final syncQueueService = ref.watch(syncQueueServiceProvider);
-  final firestore = ref.watch(firebaseFirestoreProvider);
-  final connectivity = ref.watch(connectivityProvider);
-
-  final service = ProfileSyncService(
-    database: database,
-    syncQueueService: syncQueueService,
-    firestore: firestore,
-    connectivity: connectivity,
+  return ProfileSyncService(
+    database: ref.watch(appDatabaseProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+    connectivity: ref.watch(connectivityProvider),
   );
+});
 
-  service.startAutoSync();
+final medicineSyncServiceProvider = Provider<MedicineSyncService>((ref) {
+  return MedicineSyncService(
+    database: ref.watch(appDatabaseProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
+});
 
-  ref.onDispose(() {
-    service.stopAutoSync();
-  });
+final reminderSyncServiceProvider = Provider<ReminderSyncService>((ref) {
+  return ReminderSyncService(
+    database: ref.watch(appDatabaseProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
+});
 
-  return service;
+final doseLogSyncServiceProvider = Provider<DoseLogSyncService>((ref) {
+  return DoseLogSyncService(
+    database: ref.watch(appDatabaseProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
+});
+
+final appStartupSyncProvider = Provider<Future<void>>((ref) async {
+  final profileSyncService = ref.watch(profileSyncServiceProvider);
+  final medicineSyncService = ref.watch(medicineSyncServiceProvider);
+  final reminderSyncService = ref.watch(reminderSyncServiceProvider);
+  final doseLogSyncService = ref.watch(doseLogSyncServiceProvider);
+
+  profileSyncService.startAutoSync();
+
+  await medicineSyncService.syncAll();
+  await reminderSyncService.syncAll();
+  await doseLogSyncService.syncAll();
+  await profileSyncService.triggerSyncOnAppStart();
 });

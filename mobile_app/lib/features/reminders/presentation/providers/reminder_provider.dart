@@ -1,25 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:aayutrack/core/database/app_database.dart' as db;
-import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/core/sync/sync_providers.dart';
 import 'package:aayutrack/features/reminders/data/datasources/reminder_local_datasource.dart';
 import 'package:aayutrack/features/reminders/data/repositories/reminder_repository_impl.dart';
 import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 import 'package:aayutrack/features/reminders/domain/repositories/reminder_repository.dart';
 
-final reminderDatabaseProvider = Provider<db.AppDatabase>((ref) {
-  final database = db.AppDatabase();
-  ref.onDispose(database.close);
-  return database;
-});
-
-final reminderSyncQueueServiceProvider = Provider<SyncQueueService>((ref) {
-  final database = ref.watch(reminderDatabaseProvider);
-  return SyncQueueService(database);
-});
-
-final reminderLocalDataSourceProvider = Provider<ReminderLocalDataSource>((ref) {
-  final database = ref.watch(reminderDatabaseProvider);
+final reminderLocalDataSourceProvider =
+    Provider<ReminderLocalDataSource>((ref) {
+  final database = ref.watch(appDatabaseProvider);
   return ReminderLocalDataSource(
     remindersDao: database.remindersDao,
   );
@@ -28,7 +17,7 @@ final reminderLocalDataSourceProvider = Provider<ReminderLocalDataSource>((ref) 
 final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
   return ReminderRepositoryImpl(
     localDataSource: ref.watch(reminderLocalDataSourceProvider),
-    syncQueueService: ref.watch(reminderSyncQueueServiceProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
   );
 });
 

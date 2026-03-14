@@ -66,7 +66,6 @@ class ReminderRepositoryImpl implements ReminderRepository {
     if (existing == null) return;
 
     await localDataSource.deleteReminder(id);
-    await localDataSource.markReminderAsPendingSync(id);
 
     await syncQueueService.enqueue(
       entityType: 'reminder',

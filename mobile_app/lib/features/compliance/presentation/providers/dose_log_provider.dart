@@ -1,25 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:aayutrack/core/database/app_database.dart' as db;
-import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/core/sync/sync_providers.dart';
 import 'package:aayutrack/features/compliance/data/datasources/dose_log_local_datasource.dart';
 import 'package:aayutrack/features/compliance/data/repositories/dose_log_repository_impl.dart';
 import 'package:aayutrack/features/compliance/domain/entities/dose_log.dart';
 import 'package:aayutrack/features/compliance/domain/repositories/dose_log_repository.dart';
 
-final doseLogDatabaseProvider = Provider<db.AppDatabase>((ref) {
-  final database = db.AppDatabase();
-  ref.onDispose(database.close);
-  return database;
-});
-
-final doseLogSyncQueueServiceProvider = Provider<SyncQueueService>((ref) {
-  final database = ref.watch(doseLogDatabaseProvider);
-  return SyncQueueService(database);
-});
-
 final doseLogLocalDataSourceProvider = Provider<DoseLogLocalDataSource>((ref) {
-  final database = ref.watch(doseLogDatabaseProvider);
+  final database = ref.watch(appDatabaseProvider);
   return DoseLogLocalDataSource(
     doseLogsDao: database.doseLogsDao,
   );
@@ -28,7 +16,7 @@ final doseLogLocalDataSourceProvider = Provider<DoseLogLocalDataSource>((ref) {
 final doseLogRepositoryProvider = Provider<DoseLogRepository>((ref) {
   return DoseLogRepositoryImpl(
     localDataSource: ref.watch(doseLogLocalDataSourceProvider),
-    syncQueueService: ref.watch(doseLogSyncQueueServiceProvider),
+    syncQueueService: ref.watch(syncQueueServiceProvider),
   );
 });
 
@@ -67,6 +55,7 @@ class DoseLogState {
   List<DoseLog> get takenLogs => doseLogs.where((d) => d.isTaken).toList();
   List<DoseLog> get missedLogs => doseLogs.where((d) => d.isMissed).toList();
   List<DoseLog> get skippedLogs => doseLogs.where((d) => d.isSkipped).toList();
+  List<DoseLog> get scheduledLogs => doseLogs.where((d) => d.isScheduled).toList();
 
   bool get hasError => errorMessage != null;
 }
@@ -82,6 +71,16 @@ class DoseLogNotifier extends StateNotifier<DoseLogState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final doseLogs = await _repository.getDoseLogs();
+      state = state.copyWith(isLoading: false, doseLogs: doseLogs);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> loadDoseLogsByMedicineId(String medicineId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final doseLogs = await _repository.getDoseLogsByMedicineId(medicineId);
       state = state.copyWith(isLoading: false, doseLogs: doseLogs);
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());

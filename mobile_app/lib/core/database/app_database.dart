@@ -29,6 +29,8 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
+  static const int maxSyncRetries = 3;
+
   @override
   int get schemaVersion => 5;
 
@@ -102,9 +104,23 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<SyncQueueData>> getPendingSyncItems() {
     return (select(syncQueue)
-          ..where((tbl) => tbl.status.equals('pending'))
+          ..where((tbl) =>
+              tbl.status.equals('pending') |
+              ((tbl.status.equals('failed')) &
+                  tbl.retryCount.isSmallerThanValue(maxSyncRetries)))
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.createdAt)]))
         .get();
+  }
+
+  Future<List<SyncQueueData>> getAllSyncQueueItems() {
+    return (select(syncQueue)
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.createdAt)]))
+        .get();
+  }
+
+  Future<SyncQueueData?> getSyncQueueItemById(String id) {
+    return (select(syncQueue)..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
   }
 
   Future<void> updateSyncQueueStatus({
@@ -122,9 +138,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> incrementSyncRetryCount(String id) async {
-    final item = await (select(syncQueue)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
-
+    final item = await getSyncQueueItemById(id);
     if (item == null) return;
 
     await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
@@ -134,4 +148,55 @@ class AppDatabase extends _$AppDatabase {
       ),
     );
   }
+
+  Future<void> markSyncQueueItemAsPending(String id) async {
+    await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
+      SyncQueueCompanion(
+        status: const Value('pending'),
+        errorMessage: const Value(null),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<void> deleteSyncQueueItem(String id) async {
+    await (delete(syncQueue)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<Map<String, int>> getSyncQueueStatusCounts() async {
+    final items = await getAllSyncQueueItems();
+
+    int pending = 0;
+    int syncing = 0;
+    int synced = 0;
+    int failed = 0;
+
+    for (final item in items) {
+      switch (item.status) {
+        case 'pending':
+          pending++;
+          break;
+        case 'syncing':
+          syncing++;
+          break;
+        case 'synced':
+          synced++;
+          break;
+        case 'failed':
+          failed++;
+          break;
+      }
+    }
+
+    return {
+      'pending': pending,
+      'syncing': syncing,
+      'synced': synced,
+      'failed': failed,
+      'total': items.length,
+    };
+  }
+
+  @override
+  Future<void> close() => super.close();
 }

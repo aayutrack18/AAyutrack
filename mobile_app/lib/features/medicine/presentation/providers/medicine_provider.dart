@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:aayutrack/core/database/app_database.dart' as db;
-import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/core/sync/sync_providers.dart';
 import 'package:aayutrack/features/medicine/data/datasources/medicine_local_datasource.dart';
 import 'package:aayutrack/features/medicine/data/repositories/medicine_repository_impl.dart';
 import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
@@ -9,18 +8,8 @@ import 'package:aayutrack/features/medicine/domain/repositories/medicine_reposit
 
 // ─── INFRASTRUCTURE PROVIDERS ────────────────────────────────────────────────
 
-final appDatabaseProvider = Provider<db.AppDatabase>((ref) {
-  final database = db.AppDatabase();
-  ref.onDispose(database.close);
-  return database;
-});
-
-final syncQueueServiceProvider = Provider<SyncQueueService>((ref) {
-  final database = ref.watch(appDatabaseProvider);
-  return SyncQueueService(database);
-});
-
-final medicineLocalDataSourceProvider = Provider<MedicineLocalDataSource>((ref) {
+final medicineLocalDataSourceProvider =
+    Provider<MedicineLocalDataSource>((ref) {
   final database = ref.watch(appDatabaseProvider);
   return MedicineLocalDataSource(
     medicinesDao: database.medicinesDao,

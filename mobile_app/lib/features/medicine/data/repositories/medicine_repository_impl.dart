@@ -66,7 +66,6 @@ class MedicineRepositoryImpl implements MedicineRepository {
     if (existing == null) return;
 
     await localDataSource.deleteMedicine(id);
-    await localDataSource.markMedicineAsPendingSync(id);
 
     await syncQueueService.enqueue(
       entityType: 'medicine',

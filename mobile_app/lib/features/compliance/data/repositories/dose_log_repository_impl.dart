@@ -72,7 +72,6 @@ class DoseLogRepositoryImpl implements DoseLogRepository {
     if (existing == null) return;
 
     await localDataSource.deleteDoseLog(id);
-    await localDataSource.markDoseLogAsPendingSync(id);
 
     await syncQueueService.enqueue(
       entityType: 'dose_log',
