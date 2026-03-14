@@ -41,6 +41,23 @@ class ComplianceSummary {
       'complianceScore': complianceScore,
     };
   }
+
+  factory ComplianceSummary.fromJson(Map<String, dynamic> json) {
+    return ComplianceSummary(
+      periodStart: DateTime.tryParse(json['periodStart'] as String? ?? '') ??
+          DateTime.now(),
+      periodEnd: DateTime.tryParse(json['periodEnd'] as String? ?? '') ??
+          DateTime.now(),
+      totalScheduled: json['totalScheduled'] as int? ?? 0,
+      takenCount: json['takenCount'] as int? ?? 0,
+      missedCount: json['missedCount'] as int? ?? 0,
+      skippedCount: json['skippedCount'] as int? ?? 0,
+      pendingCount: json['pendingCount'] as int? ?? 0,
+      adherencePercentage:
+          (json['adherencePercentage'] as num?)?.toDouble() ?? 0.0,
+      complianceScore: (json['complianceScore'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
 class MedicineComplianceSummary {
@@ -76,6 +93,20 @@ class MedicineComplianceSummary {
       'complianceScore': complianceScore,
     };
   }
+
+  factory MedicineComplianceSummary.fromJson(Map<String, dynamic> json) {
+    return MedicineComplianceSummary(
+      medicineId: json['medicineId'] as String? ?? '',
+      totalScheduled: json['totalScheduled'] as int? ?? 0,
+      takenCount: json['takenCount'] as int? ?? 0,
+      missedCount: json['missedCount'] as int? ?? 0,
+      skippedCount: json['skippedCount'] as int? ?? 0,
+      pendingCount: json['pendingCount'] as int? ?? 0,
+      adherencePercentage:
+          (json['adherencePercentage'] as num?)?.toDouble() ?? 0.0,
+      complianceScore: (json['complianceScore'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
 class ComplianceScoreService {
@@ -102,13 +133,11 @@ class ComplianceScoreService {
     final takenCount = filteredLogs.where((log) => log.isTaken).length;
     final missedCount = filteredLogs.where((log) => log.isMissed).length;
     final skippedCount = filteredLogs.where((log) => log.isSkipped).length;
-    final pendingCount = filteredLogs
-        .where((log) => _isPending(log, currentTime))
-        .length;
+    final pendingCount =
+        filteredLogs.where((log) => _isPending(log, currentTime)).length;
 
-    final adherencePercentage = totalScheduled == 0
-        ? 0.0
-        : (takenCount / totalScheduled) * 100.0;
+    final adherencePercentage =
+        totalScheduled == 0 ? 0.0 : (takenCount / totalScheduled) * 100.0;
 
     final complianceScore = adherencePercentage.clamp(0.0, 100.0);
 
@@ -153,11 +182,11 @@ class ComplianceScoreService {
       final takenCount = logs.where((log) => log.isTaken).length;
       final missedCount = logs.where((log) => log.isMissed).length;
       final skippedCount = logs.where((log) => log.isSkipped).length;
-      final pendingCount = logs.where((log) => _isPending(log, currentTime)).length;
+      final pendingCount =
+          logs.where((log) => _isPending(log, currentTime)).length;
 
-      final adherencePercentage = totalScheduled == 0
-          ? 0.0
-          : (takenCount / totalScheduled) * 100.0;
+      final adherencePercentage =
+          totalScheduled == 0 ? 0.0 : (takenCount / totalScheduled) * 100.0;
 
       final complianceScore = adherencePercentage.clamp(0.0, 100.0);
 
@@ -199,7 +228,9 @@ class ComplianceScoreService {
     DateTime? now,
   }) {
     final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
-    final end = start.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+    final end = start.add(
+      const Duration(days: 6, hours: 23, minutes: 59, seconds: 59),
+    );
 
     final summary = calculate(
       doseLogs: doseLogs,

@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aayutrack/core/sync/sync_providers.dart';
 import 'package:aayutrack/features/compliance/presentation/providers/dose_log_provider.dart';
 import 'package:aayutrack/features/medicine/presentation/providers/medicine_provider.dart';
 import 'package:aayutrack/features/reminders/presentation/providers/reminder_provider.dart';
 
 import 'compliance_score_service.dart';
 import 'digital_twin_model.dart';
+import 'digital_twin_persistence_service.dart';
 import 'digital_twin_service.dart';
 import 'missed_dose_detection_service.dart';
 import 'risk_detection_service.dart';
@@ -30,6 +32,13 @@ final digitalTwinServiceProvider = Provider<DigitalTwinService>((ref) {
   return DigitalTwinService(
     complianceScoreService: ref.watch(complianceScoreServiceProvider),
     riskDetectionService: ref.watch(riskDetectionServiceProvider),
+  );
+});
+
+final digitalTwinPersistenceServiceProvider =
+    Provider<DigitalTwinPersistenceService>((ref) {
+  return DigitalTwinPersistenceService(
+    database: ref.watch(appDatabaseProvider),
   );
 });
 
@@ -110,6 +119,29 @@ final digitalTwinProvider = Provider<DigitalTwinModel>((ref) {
     reminders: reminderState.reminders,
     now: DateTime.now(),
   );
+});
+
+final persistDigitalTwinSnapshotProvider = FutureProvider<void>((ref) async {
+  final persistenceService = ref.watch(digitalTwinPersistenceServiceProvider);
+  final model = ref.watch(digitalTwinProvider);
+
+  await persistenceService.saveDigitalTwinSnapshot(model);
+});
+
+final latestDigitalTwinSnapshotProvider =
+    FutureProvider<DigitalTwinModel?>((ref) async {
+  final patientId = ref.watch(currentPatientIdProvider);
+  final persistenceService = ref.watch(digitalTwinPersistenceServiceProvider);
+
+  return persistenceService.getLatestDigitalTwinSnapshot(patientId);
+});
+
+final digitalTwinHistoryProvider =
+    FutureProvider<List<DigitalTwinModel>>((ref) async {
+  final patientId = ref.watch(currentPatientIdProvider);
+  final persistenceService = ref.watch(digitalTwinPersistenceServiceProvider);
+
+  return persistenceService.getDigitalTwinHistory(patientId);
 });
 
 final intelligenceLoadingProvider = Provider<bool>((ref) {

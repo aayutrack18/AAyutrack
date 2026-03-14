@@ -5,6 +5,7 @@ import 'daos/medicines_dao.dart';
 import 'daos/reminders_dao.dart';
 import 'database_connection.dart';
 import 'tables/dose_logs.dart';
+import 'tables/intelligence_snapshots.dart';
 import 'tables/medicines.dart';
 import 'tables/patient_profiles.dart';
 import 'tables/reminders.dart';
@@ -19,6 +20,7 @@ part 'app_database.g.dart';
     Medicines,
     Reminders,
     DoseLogs,
+    IntelligenceSnapshots,
   ],
   daos: [
     MedicinesDao,
@@ -32,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   static const int maxSyncRetries = 3;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +60,10 @@ class AppDatabase extends _$AppDatabase {
 
           if (from >= 4 && from < 5) {
             await m.addColumn(reminders, reminders.reminderType);
+          }
+
+          if (from < 6) {
+            await m.createTable(intelligenceSnapshots);
           }
         },
       );
@@ -102,13 +108,59 @@ class AppDatabase extends _$AppDatabase {
     await into(syncQueue).insertOnConflictUpdate(item);
   }
 
+  Future<SyncQueueData?> findLatestNonSyncedQueueItem({
+    required String entityType,
+    required String entityId,
+    required String operation,
+  }) {
+    return (select(syncQueue)
+          ..where((tbl) =>
+              tbl.entityType.equals(entityType) &
+              tbl.entityId.equals(entityId) &
+              tbl.operation.equals(operation) &
+              tbl.status.equals('synced').not())
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.updatedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<void> updateSyncQueuePayload({
+    required String id,
+    required String payload,
+    String? status,
+    String? errorMessage,
+  }) async {
+    await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
+      SyncQueueCompanion(
+        payload: Value(payload),
+        status: status == null ? const Value.absent() : Value(status),
+        errorMessage: Value(errorMessage),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<List<SyncQueueData>> getPendingSyncItems() {
     return (select(syncQueue)
           ..where((tbl) =>
               tbl.status.equals('pending') |
-              ((tbl.status.equals('failed')) &
+              (tbl.status.equals('failed') &
                   tbl.retryCount.isSmallerThanValue(maxSyncRetries)))
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.createdAt)]))
+        .get();
+  }
+
+  Future<List<SyncQueueData>> getFailedSyncItems() {
+    return (select(syncQueue)
+          ..where((tbl) => tbl.status.equals('failed'))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.updatedAt)]))
+        .get();
+  }
+
+  Future<List<SyncQueueData>> getSyncedSyncItems() {
+    return (select(syncQueue)
+          ..where((tbl) => tbl.status.equals('synced'))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.updatedAt)]))
         .get();
   }
 
@@ -149,6 +201,15 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<void> resetSyncRetryCount(String id) async {
+    await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
+      SyncQueueCompanion(
+        retryCount: const Value(0),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<void> markSyncQueueItemAsPending(String id) async {
     await (update(syncQueue)..where((tbl) => tbl.id.equals(id))).write(
       SyncQueueCompanion(
@@ -161,6 +222,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteSyncQueueItem(String id) async {
     await (delete(syncQueue)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<int> clearSyncedSyncQueueItems() {
+    return (delete(syncQueue)..where((tbl) => tbl.status.equals('synced'))).go();
   }
 
   Future<Map<String, int>> getSyncQueueStatusCounts() async {
@@ -195,6 +260,59 @@ class AppDatabase extends _$AppDatabase {
       'failed': failed,
       'total': items.length,
     };
+  }
+
+  Future<void> insertIntelligenceSnapshot(
+    IntelligenceSnapshotsCompanion snapshot,
+  ) async {
+    await into(intelligenceSnapshots).insertOnConflictUpdate(snapshot);
+  }
+
+  Future<List<IntelligenceSnapshot>> getIntelligenceSnapshotsByPatientId(
+    String patientId, {
+    String? snapshotType,
+    int? limit,
+  }) {
+    final query = select(intelligenceSnapshots)
+      ..where((tbl) => tbl.patientId.equals(patientId))
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.generatedAt)]);
+
+    if (snapshotType != null) {
+      query.where((tbl) => tbl.snapshotType.equals(snapshotType));
+    }
+
+    if (limit != null) {
+      query.limit(limit);
+    }
+
+    return query.get();
+  }
+
+  Future<IntelligenceSnapshot?> getLatestIntelligenceSnapshot(
+    String patientId, {
+    String? snapshotType,
+  }) {
+    final query = select(intelligenceSnapshots)
+      ..where((tbl) => tbl.patientId.equals(patientId))
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.generatedAt)])
+      ..limit(1);
+
+    if (snapshotType != null) {
+      query.where((tbl) => tbl.snapshotType.equals(snapshotType));
+    }
+
+    return query.getSingleOrNull();
+  }
+
+  Future<int> deleteOldIntelligenceSnapshots(
+    String patientId, {
+    required DateTime olderThan,
+  }) {
+    return (delete(intelligenceSnapshots)
+          ..where((tbl) =>
+              tbl.patientId.equals(patientId) &
+              tbl.generatedAt.isSmallerThanValue(olderThan)))
+        .go();
   }
 
   @override

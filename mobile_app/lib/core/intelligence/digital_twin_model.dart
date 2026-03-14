@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:aayutrack/core/intelligence/compliance_score_service.dart';
 import 'package:aayutrack/core/intelligence/risk_detection_service.dart';
 
@@ -31,6 +33,19 @@ class DigitalTwinAdherencePattern {
       'totalActiveAlerts': totalActiveAlerts,
     };
   }
+
+  factory DigitalTwinAdherencePattern.fromJson(Map<String, dynamic> json) {
+    return DigitalTwinAdherencePattern(
+      totalScheduledDoses: json['totalScheduledDoses'] as int? ?? 0,
+      totalTakenDoses: json['totalTakenDoses'] as int? ?? 0,
+      totalMissedDoses: json['totalMissedDoses'] as int? ?? 0,
+      totalSkippedDoses: json['totalSkippedDoses'] as int? ?? 0,
+      averageComplianceScore:
+          (json['averageComplianceScore'] as num?)?.toDouble() ?? 0.0,
+      currentMissedDoseStreak: json['currentMissedDoseStreak'] as int? ?? 0,
+      totalActiveAlerts: json['totalActiveAlerts'] as int? ?? 0,
+    );
+  }
 }
 
 class DigitalTwinMedicationBehavior {
@@ -59,6 +74,17 @@ class DigitalTwinMedicationBehavior {
       'missedCount': missedCount,
       'skippedCount': skippedCount,
     };
+  }
+
+  factory DigitalTwinMedicationBehavior.fromJson(Map<String, dynamic> json) {
+    return DigitalTwinMedicationBehavior(
+      medicineId: json['medicineId'] as String? ?? '',
+      complianceScore: (json['complianceScore'] as num?)?.toDouble() ?? 0.0,
+      scheduledCount: json['scheduledCount'] as int? ?? 0,
+      takenCount: json['takenCount'] as int? ?? 0,
+      missedCount: json['missedCount'] as int? ?? 0,
+      skippedCount: json['skippedCount'] as int? ?? 0,
+    );
   }
 }
 
@@ -113,5 +139,47 @@ class DigitalTwinModel {
           activeRiskAlerts.map((alert) => alert.toJson()).toList(),
       'riskLevel': riskLevel,
     };
+  }
+
+  String toJsonString() => jsonEncode(toJson());
+
+  factory DigitalTwinModel.fromJson(Map<String, dynamic> json) {
+    final complianceJson =
+        (json['overallCompliance'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    final adherenceJson =
+        (json['adherencePattern'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+
+    final medicationJson =
+        (json['medicationBehaviors'] as List<dynamic>? ?? const [])
+            .cast<Map>()
+            .map((item) => item.cast<String, dynamic>())
+            .toList();
+
+    final alertsJson = (json['activeRiskAlerts'] as List<dynamic>? ?? const [])
+        .cast<Map>()
+        .map((item) => item.cast<String, dynamic>())
+        .toList();
+
+    return DigitalTwinModel(
+      patientId: json['patientId'] as String? ?? '',
+      generatedAt: DateTime.tryParse(json['generatedAt'] as String? ?? '') ??
+          DateTime.now(),
+      overallCompliance: ComplianceSummary.fromJson(complianceJson),
+      adherencePattern: DigitalTwinAdherencePattern.fromJson(adherenceJson),
+      medicationBehaviors: medicationJson
+          .map(DigitalTwinMedicationBehavior.fromJson)
+          .toList(),
+      activeRiskAlerts: alertsJson.map(RiskAlert.fromJson).toList(),
+      riskLevel: json['riskLevel'] as String? ?? 'low',
+    );
+  }
+
+  factory DigitalTwinModel.fromJsonString(String jsonString) {
+    return DigitalTwinModel.fromJson(
+      jsonDecode(jsonString) as Map<String, dynamic>,
+    );
   }
 }

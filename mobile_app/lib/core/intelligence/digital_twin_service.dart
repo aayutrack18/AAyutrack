@@ -23,7 +23,8 @@ class DigitalTwinService {
     int analysisWindowDays = 7,
   }) {
     final currentTime = now ?? DateTime.now();
-    final periodStart = currentTime.subtract(Duration(days: analysisWindowDays - 1));
+    final periodStart =
+        currentTime.subtract(Duration(days: analysisWindowDays - 1));
     final periodEnd = currentTime;
 
     final filteredDoseLogs = doseLogs
@@ -66,7 +67,8 @@ class DigitalTwinService {
       totalMissedDoses: overallCompliance.missedCount,
       totalSkippedDoses: overallCompliance.skippedCount,
       averageComplianceScore: overallCompliance.complianceScore,
-      currentMissedDoseStreak: _calculateCurrentMissedDoseStreak(filteredDoseLogs),
+      currentMissedDoseStreak:
+          _calculateCurrentMissedDoseStreak(filteredDoseLogs),
       totalActiveAlerts: activeRiskAlerts.length,
     );
 
@@ -100,9 +102,7 @@ class DigitalTwinService {
   }
 
   int _calculateCurrentMissedDoseStreak(List<DoseLog> doseLogs) {
-    final sortedLogs = doseLogs
-        .where((log) => !log.isDeleted)
-        .toList()
+    final sortedLogs = doseLogs.where((log) => !log.isDeleted).toList()
       ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
     var streak = 0;
@@ -122,7 +122,8 @@ class DigitalTwinService {
     required List<RiskAlert> activeAlerts,
     required int missedStreak,
   }) {
-    final highAlerts = activeAlerts.where((alert) => alert.severity == 'high').length;
+    final highAlerts =
+        activeAlerts.where((alert) => alert.severity == 'high').length;
     final mediumAlerts =
         activeAlerts.where((alert) => alert.severity == 'medium').length;
 

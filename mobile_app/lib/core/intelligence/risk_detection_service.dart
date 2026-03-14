@@ -37,6 +37,22 @@ class RiskAlert {
       'metadata': metadata,
     };
   }
+
+  factory RiskAlert.fromJson(Map<String, dynamic> json) {
+    return RiskAlert(
+      id: json['id'] as String? ?? '',
+      patientId: json['patientId'] as String? ?? '',
+      riskType: json['riskType'] as String? ?? '',
+      severity: json['severity'] as String? ?? 'low',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      detectedAt: DateTime.tryParse(json['detectedAt'] as String? ?? '') ??
+          DateTime.now(),
+      metadata:
+          (json['metadata'] as Map?)?.cast<String, dynamic>() ??
+              <String, dynamic>{},
+    );
+  }
 }
 
 class RiskDetectionService {
@@ -83,7 +99,9 @@ class RiskDetectionService {
       ),
     );
 
-    alerts.sort((a, b) => _severityRank(b.severity).compareTo(_severityRank(a.severity)));
+    alerts.sort(
+      (a, b) => _severityRank(b.severity).compareTo(_severityRank(a.severity)),
+    );
     return alerts;
   }
 

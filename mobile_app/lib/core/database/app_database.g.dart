@@ -3761,6 +3761,456 @@ class DoseLogsCompanion extends UpdateCompanion<DoseLog> {
   }
 }
 
+class $IntelligenceSnapshotsTable extends IntelligenceSnapshots
+    with TableInfo<$IntelligenceSnapshotsTable, IntelligenceSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IntelligenceSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _patientIdMeta =
+      const VerificationMeta('patientId');
+  @override
+  late final GeneratedColumn<String> patientId = GeneratedColumn<String>(
+      'patient_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _snapshotTypeMeta =
+      const VerificationMeta('snapshotType');
+  @override
+  late final GeneratedColumn<String> snapshotType = GeneratedColumn<String>(
+      'snapshot_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _riskLevelMeta =
+      const VerificationMeta('riskLevel');
+  @override
+  late final GeneratedColumn<String> riskLevel = GeneratedColumn<String>(
+      'risk_level', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _complianceScoreMeta =
+      const VerificationMeta('complianceScore');
+  @override
+  late final GeneratedColumn<double> complianceScore = GeneratedColumn<double>(
+      'compliance_score', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _payloadJsonMeta =
+      const VerificationMeta('payloadJson');
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+      'payload_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _generatedAtMeta =
+      const VerificationMeta('generatedAt');
+  @override
+  late final GeneratedColumn<DateTime> generatedAt = GeneratedColumn<DateTime>(
+      'generated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        patientId,
+        snapshotType,
+        riskLevel,
+        complianceScore,
+        payloadJson,
+        generatedAt,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'intelligence_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<IntelligenceSnapshot> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('patient_id')) {
+      context.handle(_patientIdMeta,
+          patientId.isAcceptableOrUnknown(data['patient_id']!, _patientIdMeta));
+    } else if (isInserting) {
+      context.missing(_patientIdMeta);
+    }
+    if (data.containsKey('snapshot_type')) {
+      context.handle(
+          _snapshotTypeMeta,
+          snapshotType.isAcceptableOrUnknown(
+              data['snapshot_type']!, _snapshotTypeMeta));
+    } else if (isInserting) {
+      context.missing(_snapshotTypeMeta);
+    }
+    if (data.containsKey('risk_level')) {
+      context.handle(_riskLevelMeta,
+          riskLevel.isAcceptableOrUnknown(data['risk_level']!, _riskLevelMeta));
+    }
+    if (data.containsKey('compliance_score')) {
+      context.handle(
+          _complianceScoreMeta,
+          complianceScore.isAcceptableOrUnknown(
+              data['compliance_score']!, _complianceScoreMeta));
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+          _payloadJsonMeta,
+          payloadJson.isAcceptableOrUnknown(
+              data['payload_json']!, _payloadJsonMeta));
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('generated_at')) {
+      context.handle(
+          _generatedAtMeta,
+          generatedAt.isAcceptableOrUnknown(
+              data['generated_at']!, _generatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_generatedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IntelligenceSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IntelligenceSnapshot(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      patientId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}patient_id'])!,
+      snapshotType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}snapshot_type'])!,
+      riskLevel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}risk_level']),
+      complianceScore: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}compliance_score']),
+      payloadJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload_json'])!,
+      generatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}generated_at'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $IntelligenceSnapshotsTable createAlias(String alias) {
+    return $IntelligenceSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class IntelligenceSnapshot extends DataClass
+    implements Insertable<IntelligenceSnapshot> {
+  final String id;
+  final String patientId;
+  final String snapshotType;
+  final String? riskLevel;
+  final double? complianceScore;
+  final String payloadJson;
+  final DateTime generatedAt;
+  final DateTime createdAt;
+  const IntelligenceSnapshot(
+      {required this.id,
+      required this.patientId,
+      required this.snapshotType,
+      this.riskLevel,
+      this.complianceScore,
+      required this.payloadJson,
+      required this.generatedAt,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['patient_id'] = Variable<String>(patientId);
+    map['snapshot_type'] = Variable<String>(snapshotType);
+    if (!nullToAbsent || riskLevel != null) {
+      map['risk_level'] = Variable<String>(riskLevel);
+    }
+    if (!nullToAbsent || complianceScore != null) {
+      map['compliance_score'] = Variable<double>(complianceScore);
+    }
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['generated_at'] = Variable<DateTime>(generatedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  IntelligenceSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return IntelligenceSnapshotsCompanion(
+      id: Value(id),
+      patientId: Value(patientId),
+      snapshotType: Value(snapshotType),
+      riskLevel: riskLevel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(riskLevel),
+      complianceScore: complianceScore == null && nullToAbsent
+          ? const Value.absent()
+          : Value(complianceScore),
+      payloadJson: Value(payloadJson),
+      generatedAt: Value(generatedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory IntelligenceSnapshot.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IntelligenceSnapshot(
+      id: serializer.fromJson<String>(json['id']),
+      patientId: serializer.fromJson<String>(json['patientId']),
+      snapshotType: serializer.fromJson<String>(json['snapshotType']),
+      riskLevel: serializer.fromJson<String?>(json['riskLevel']),
+      complianceScore: serializer.fromJson<double?>(json['complianceScore']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      generatedAt: serializer.fromJson<DateTime>(json['generatedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'patientId': serializer.toJson<String>(patientId),
+      'snapshotType': serializer.toJson<String>(snapshotType),
+      'riskLevel': serializer.toJson<String?>(riskLevel),
+      'complianceScore': serializer.toJson<double?>(complianceScore),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'generatedAt': serializer.toJson<DateTime>(generatedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  IntelligenceSnapshot copyWith(
+          {String? id,
+          String? patientId,
+          String? snapshotType,
+          Value<String?> riskLevel = const Value.absent(),
+          Value<double?> complianceScore = const Value.absent(),
+          String? payloadJson,
+          DateTime? generatedAt,
+          DateTime? createdAt}) =>
+      IntelligenceSnapshot(
+        id: id ?? this.id,
+        patientId: patientId ?? this.patientId,
+        snapshotType: snapshotType ?? this.snapshotType,
+        riskLevel: riskLevel.present ? riskLevel.value : this.riskLevel,
+        complianceScore: complianceScore.present
+            ? complianceScore.value
+            : this.complianceScore,
+        payloadJson: payloadJson ?? this.payloadJson,
+        generatedAt: generatedAt ?? this.generatedAt,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  IntelligenceSnapshot copyWithCompanion(IntelligenceSnapshotsCompanion data) {
+    return IntelligenceSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      patientId: data.patientId.present ? data.patientId.value : this.patientId,
+      snapshotType: data.snapshotType.present
+          ? data.snapshotType.value
+          : this.snapshotType,
+      riskLevel: data.riskLevel.present ? data.riskLevel.value : this.riskLevel,
+      complianceScore: data.complianceScore.present
+          ? data.complianceScore.value
+          : this.complianceScore,
+      payloadJson:
+          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
+      generatedAt:
+          data.generatedAt.present ? data.generatedAt.value : this.generatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntelligenceSnapshot(')
+          ..write('id: $id, ')
+          ..write('patientId: $patientId, ')
+          ..write('snapshotType: $snapshotType, ')
+          ..write('riskLevel: $riskLevel, ')
+          ..write('complianceScore: $complianceScore, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, patientId, snapshotType, riskLevel,
+      complianceScore, payloadJson, generatedAt, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IntelligenceSnapshot &&
+          other.id == this.id &&
+          other.patientId == this.patientId &&
+          other.snapshotType == this.snapshotType &&
+          other.riskLevel == this.riskLevel &&
+          other.complianceScore == this.complianceScore &&
+          other.payloadJson == this.payloadJson &&
+          other.generatedAt == this.generatedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class IntelligenceSnapshotsCompanion
+    extends UpdateCompanion<IntelligenceSnapshot> {
+  final Value<String> id;
+  final Value<String> patientId;
+  final Value<String> snapshotType;
+  final Value<String?> riskLevel;
+  final Value<double?> complianceScore;
+  final Value<String> payloadJson;
+  final Value<DateTime> generatedAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const IntelligenceSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.patientId = const Value.absent(),
+    this.snapshotType = const Value.absent(),
+    this.riskLevel = const Value.absent(),
+    this.complianceScore = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.generatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IntelligenceSnapshotsCompanion.insert({
+    required String id,
+    required String patientId,
+    required String snapshotType,
+    this.riskLevel = const Value.absent(),
+    this.complianceScore = const Value.absent(),
+    required String payloadJson,
+    required DateTime generatedAt,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        patientId = Value(patientId),
+        snapshotType = Value(snapshotType),
+        payloadJson = Value(payloadJson),
+        generatedAt = Value(generatedAt),
+        createdAt = Value(createdAt);
+  static Insertable<IntelligenceSnapshot> custom({
+    Expression<String>? id,
+    Expression<String>? patientId,
+    Expression<String>? snapshotType,
+    Expression<String>? riskLevel,
+    Expression<double>? complianceScore,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? generatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (patientId != null) 'patient_id': patientId,
+      if (snapshotType != null) 'snapshot_type': snapshotType,
+      if (riskLevel != null) 'risk_level': riskLevel,
+      if (complianceScore != null) 'compliance_score': complianceScore,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (generatedAt != null) 'generated_at': generatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IntelligenceSnapshotsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? patientId,
+      Value<String>? snapshotType,
+      Value<String?>? riskLevel,
+      Value<double?>? complianceScore,
+      Value<String>? payloadJson,
+      Value<DateTime>? generatedAt,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return IntelligenceSnapshotsCompanion(
+      id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
+      snapshotType: snapshotType ?? this.snapshotType,
+      riskLevel: riskLevel ?? this.riskLevel,
+      complianceScore: complianceScore ?? this.complianceScore,
+      payloadJson: payloadJson ?? this.payloadJson,
+      generatedAt: generatedAt ?? this.generatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (patientId.present) {
+      map['patient_id'] = Variable<String>(patientId.value);
+    }
+    if (snapshotType.present) {
+      map['snapshot_type'] = Variable<String>(snapshotType.value);
+    }
+    if (riskLevel.present) {
+      map['risk_level'] = Variable<String>(riskLevel.value);
+    }
+    if (complianceScore.present) {
+      map['compliance_score'] = Variable<double>(complianceScore.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (generatedAt.present) {
+      map['generated_at'] = Variable<DateTime>(generatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntelligenceSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('patientId: $patientId, ')
+          ..write('snapshotType: $snapshotType, ')
+          ..write('riskLevel: $riskLevel, ')
+          ..write('complianceScore: $complianceScore, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3770,6 +4220,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MedicinesTable medicines = $MedicinesTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
   late final $DoseLogsTable doseLogs = $DoseLogsTable(this);
+  late final $IntelligenceSnapshotsTable intelligenceSnapshots =
+      $IntelligenceSnapshotsTable(this);
   late final MedicinesDao medicinesDao = MedicinesDao(this as AppDatabase);
   late final RemindersDao remindersDao = RemindersDao(this as AppDatabase);
   late final DoseLogsDao doseLogsDao = DoseLogsDao(this as AppDatabase);
@@ -3777,8 +4229,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [patientProfiles, syncQueue, medicines, reminders, doseLogs];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        patientProfiles,
+        syncQueue,
+        medicines,
+        reminders,
+        doseLogs,
+        intelligenceSnapshots
+      ];
 }
 
 typedef $$PatientProfilesTableCreateCompanionBuilder = PatientProfilesCompanion
@@ -5432,6 +5890,234 @@ typedef $$DoseLogsTableProcessedTableManager = ProcessedTableManager<
     (DoseLog, BaseReferences<_$AppDatabase, $DoseLogsTable, DoseLog>),
     DoseLog,
     PrefetchHooks Function()>;
+typedef $$IntelligenceSnapshotsTableCreateCompanionBuilder
+    = IntelligenceSnapshotsCompanion Function({
+  required String id,
+  required String patientId,
+  required String snapshotType,
+  Value<String?> riskLevel,
+  Value<double?> complianceScore,
+  required String payloadJson,
+  required DateTime generatedAt,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$IntelligenceSnapshotsTableUpdateCompanionBuilder
+    = IntelligenceSnapshotsCompanion Function({
+  Value<String> id,
+  Value<String> patientId,
+  Value<String> snapshotType,
+  Value<String?> riskLevel,
+  Value<double?> complianceScore,
+  Value<String> payloadJson,
+  Value<DateTime> generatedAt,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$IntelligenceSnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $IntelligenceSnapshotsTable> {
+  $$IntelligenceSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get patientId => $composableBuilder(
+      column: $table.patientId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get snapshotType => $composableBuilder(
+      column: $table.snapshotType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get riskLevel => $composableBuilder(
+      column: $table.riskLevel, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get complianceScore => $composableBuilder(
+      column: $table.complianceScore,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get generatedAt => $composableBuilder(
+      column: $table.generatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$IntelligenceSnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IntelligenceSnapshotsTable> {
+  $$IntelligenceSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get patientId => $composableBuilder(
+      column: $table.patientId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get snapshotType => $composableBuilder(
+      column: $table.snapshotType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get riskLevel => $composableBuilder(
+      column: $table.riskLevel, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get complianceScore => $composableBuilder(
+      column: $table.complianceScore,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get generatedAt => $composableBuilder(
+      column: $table.generatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$IntelligenceSnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IntelligenceSnapshotsTable> {
+  $$IntelligenceSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get patientId =>
+      $composableBuilder(column: $table.patientId, builder: (column) => column);
+
+  GeneratedColumn<String> get snapshotType => $composableBuilder(
+      column: $table.snapshotType, builder: (column) => column);
+
+  GeneratedColumn<String> get riskLevel =>
+      $composableBuilder(column: $table.riskLevel, builder: (column) => column);
+
+  GeneratedColumn<double> get complianceScore => $composableBuilder(
+      column: $table.complianceScore, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get generatedAt => $composableBuilder(
+      column: $table.generatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$IntelligenceSnapshotsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $IntelligenceSnapshotsTable,
+    IntelligenceSnapshot,
+    $$IntelligenceSnapshotsTableFilterComposer,
+    $$IntelligenceSnapshotsTableOrderingComposer,
+    $$IntelligenceSnapshotsTableAnnotationComposer,
+    $$IntelligenceSnapshotsTableCreateCompanionBuilder,
+    $$IntelligenceSnapshotsTableUpdateCompanionBuilder,
+    (
+      IntelligenceSnapshot,
+      BaseReferences<_$AppDatabase, $IntelligenceSnapshotsTable,
+          IntelligenceSnapshot>
+    ),
+    IntelligenceSnapshot,
+    PrefetchHooks Function()> {
+  $$IntelligenceSnapshotsTableTableManager(
+      _$AppDatabase db, $IntelligenceSnapshotsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IntelligenceSnapshotsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IntelligenceSnapshotsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IntelligenceSnapshotsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> patientId = const Value.absent(),
+            Value<String> snapshotType = const Value.absent(),
+            Value<String?> riskLevel = const Value.absent(),
+            Value<double?> complianceScore = const Value.absent(),
+            Value<String> payloadJson = const Value.absent(),
+            Value<DateTime> generatedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              IntelligenceSnapshotsCompanion(
+            id: id,
+            patientId: patientId,
+            snapshotType: snapshotType,
+            riskLevel: riskLevel,
+            complianceScore: complianceScore,
+            payloadJson: payloadJson,
+            generatedAt: generatedAt,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String patientId,
+            required String snapshotType,
+            Value<String?> riskLevel = const Value.absent(),
+            Value<double?> complianceScore = const Value.absent(),
+            required String payloadJson,
+            required DateTime generatedAt,
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              IntelligenceSnapshotsCompanion.insert(
+            id: id,
+            patientId: patientId,
+            snapshotType: snapshotType,
+            riskLevel: riskLevel,
+            complianceScore: complianceScore,
+            payloadJson: payloadJson,
+            generatedAt: generatedAt,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$IntelligenceSnapshotsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $IntelligenceSnapshotsTable,
+        IntelligenceSnapshot,
+        $$IntelligenceSnapshotsTableFilterComposer,
+        $$IntelligenceSnapshotsTableOrderingComposer,
+        $$IntelligenceSnapshotsTableAnnotationComposer,
+        $$IntelligenceSnapshotsTableCreateCompanionBuilder,
+        $$IntelligenceSnapshotsTableUpdateCompanionBuilder,
+        (
+          IntelligenceSnapshot,
+          BaseReferences<_$AppDatabase, $IntelligenceSnapshotsTable,
+              IntelligenceSnapshot>
+        ),
+        IntelligenceSnapshot,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5446,4 +6132,6 @@ class $AppDatabaseManager {
       $$RemindersTableTableManager(_db, _db.reminders);
   $$DoseLogsTableTableManager get doseLogs =>
       $$DoseLogsTableTableManager(_db, _db.doseLogs);
+  $$IntelligenceSnapshotsTableTableManager get intelligenceSnapshots =>
+      $$IntelligenceSnapshotsTableTableManager(_db, _db.intelligenceSnapshots);
 }

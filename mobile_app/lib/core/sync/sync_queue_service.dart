@@ -5,6 +5,27 @@ import 'package:uuid/uuid.dart';
 
 import '../database/app_database.dart';
 
+class SyncStatusSnapshot {
+  final int pendingCount;
+  final int syncingCount;
+  final int syncedCount;
+  final int failedCount;
+  final int totalCount;
+  final DateTime generatedAt;
+
+  const SyncStatusSnapshot({
+    required this.pendingCount,
+    required this.syncingCount,
+    required this.syncedCount,
+    required this.failedCount,
+    required this.totalCount,
+    required this.generatedAt,
+  });
+
+  bool get hasPendingWork => pendingCount > 0 || syncingCount > 0;
+  bool get hasFailures => failedCount > 0;
+}
+
 class SyncQueueService {
   final AppDatabase database;
 
@@ -19,14 +40,31 @@ class SyncQueueService {
     required String operation,
     required Map<String, dynamic> payload,
   }) async {
+    final existing = await database.findLatestNonSyncedQueueItem(
+      entityType: entityType,
+      entityId: entityId,
+      operation: operation,
+    );
+
+    final encodedPayload = jsonEncode(payload);
     final now = DateTime.now();
+
+    if (existing != null) {
+      await database.updateSyncQueuePayload(
+        id: existing.id,
+        payload: encodedPayload,
+        status: 'pending',
+        errorMessage: null,
+      );
+      return;
+    }
 
     final item = SyncQueueCompanion.insert(
       id: _uuid.v4(),
       entityType: entityType,
       entityId: entityId,
       operation: operation,
-      payload: jsonEncode(payload),
+      payload: encodedPayload,
       status: const Value('pending'),
       retryCount: const Value(0),
       errorMessage: const Value(null),
@@ -39,6 +77,14 @@ class SyncQueueService {
 
   Future<List<SyncQueueData>> getPendingItems() async {
     return database.getPendingSyncItems();
+  }
+
+  Future<List<SyncQueueData>> getFailedItems() async {
+    return database.getFailedSyncItems();
+  }
+
+  Future<List<SyncQueueData>> getSyncedItems() async {
+    return database.getSyncedSyncItems();
   }
 
   Future<List<SyncQueueData>> getPendingItemsByEntityType(
@@ -54,6 +100,18 @@ class SyncQueueService {
 
   Future<Map<String, int>> getStatusCounts() async {
     return database.getSyncQueueStatusCounts();
+  }
+
+  Future<SyncStatusSnapshot> getStatusSnapshot() async {
+    final counts = await getStatusCounts();
+    return SyncStatusSnapshot(
+      pendingCount: counts['pending'] ?? 0,
+      syncingCount: counts['syncing'] ?? 0,
+      syncedCount: counts['synced'] ?? 0,
+      failedCount: counts['failed'] ?? 0,
+      totalCount: counts['total'] ?? 0,
+      generatedAt: DateTime.now(),
+    );
   }
 
   Future<void> markSyncing(String id) async {
@@ -88,6 +146,21 @@ class SyncQueueService {
       status: hasRetriesLeft ? 'pending' : 'failed',
       errorMessage: error,
     );
+  }
+
+  Future<void> retryFailedItems() async {
+    final failedItems = await getFailedItems();
+
+    for (final item in failedItems) {
+      if (canRetry(item)) {
+        await database.resetSyncRetryCount(item.id);
+        await markPending(item.id);
+      }
+    }
+  }
+
+  Future<int> clearSyncedItems() async {
+    return database.clearSyncedSyncQueueItems();
   }
 
   Future<void> deleteQueueItem(String id) async {
