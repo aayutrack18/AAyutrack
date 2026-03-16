@@ -1,0 +1,18 @@
+Merged from:
+1) AAyutrack-feature-profile (used as base)
+2) AAyutrack-finalauthentication (auth backend/auth screens overlaid)
+
+What was merged:
+- mobile_app kept from profile project
+- auth data/domain/providers/screens/services copied from authentication project
+- main.dart updated to start at splash while keeping startup sync
+- auth navigation redirected to profileGate after login to preserve profile flow
+- doctor-dashboard kept from profile project
+- doctor-dashboard/node_modules removed to keep zip lighter
+- google_sign_in dependency set to ^6.2.2 because the auth code uses pre-7 API
+
+Next steps after unzip:
+1) cd mobile_app
+2) flutter clean
+3) flutter pub get
+4) flutter run
