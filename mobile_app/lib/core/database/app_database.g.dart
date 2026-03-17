@@ -3761,6 +3761,609 @@ class DoseLogsCompanion extends UpdateCompanion<DoseLog> {
   }
 }
 
+class $HealthLogsTable extends HealthLogs
+    with TableInfo<$HealthLogsTable, HealthLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HealthLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _patientIdMeta =
+      const VerificationMeta('patientId');
+  @override
+  late final GeneratedColumn<String> patientId = GeneratedColumn<String>(
+      'patient_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _metricTypeMeta =
+      const VerificationMeta('metricType');
+  @override
+  late final GeneratedColumn<String> metricType = GeneratedColumn<String>(
+      'metric_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+      'value', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _secondaryValueMeta =
+      const VerificationMeta('secondaryValue');
+  @override
+  late final GeneratedColumn<double> secondaryValue = GeneratedColumn<double>(
+      'secondary_value', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _recordedAtMeta =
+      const VerificationMeta('recordedAt');
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+      'recorded_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _isSyncedMeta =
+      const VerificationMeta('isSynced');
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+      'is_synced', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_synced" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        patientId,
+        metricType,
+        value,
+        secondaryValue,
+        notes,
+        source,
+        recordedAt,
+        isSynced,
+        isDeleted,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'health_logs';
+  @override
+  VerificationContext validateIntegrity(Insertable<HealthLog> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('patient_id')) {
+      context.handle(_patientIdMeta,
+          patientId.isAcceptableOrUnknown(data['patient_id']!, _patientIdMeta));
+    } else if (isInserting) {
+      context.missing(_patientIdMeta);
+    }
+    if (data.containsKey('metric_type')) {
+      context.handle(
+          _metricTypeMeta,
+          metricType.isAcceptableOrUnknown(
+              data['metric_type']!, _metricTypeMeta));
+    } else if (isInserting) {
+      context.missing(_metricTypeMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('secondary_value')) {
+      context.handle(
+          _secondaryValueMeta,
+          secondaryValue.isAcceptableOrUnknown(
+              data['secondary_value']!, _secondaryValueMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+          _recordedAtMeta,
+          recordedAt.isAcceptableOrUnknown(
+              data['recorded_at']!, _recordedAtMeta));
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(_isSyncedMeta,
+          isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta));
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HealthLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HealthLog(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      patientId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}patient_id'])!,
+      metricType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metric_type'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}value'])!,
+      secondaryValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}secondary_value']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      recordedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}recorded_at'])!,
+      isSynced: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $HealthLogsTable createAlias(String alias) {
+    return $HealthLogsTable(attachedDatabase, alias);
+  }
+}
+
+class HealthLog extends DataClass implements Insertable<HealthLog> {
+  final String id;
+  final String patientId;
+  final String metricType;
+  final double value;
+  final double? secondaryValue;
+  final String? notes;
+  final String source;
+  final DateTime recordedAt;
+  final bool isSynced;
+  final bool isDeleted;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const HealthLog(
+      {required this.id,
+      required this.patientId,
+      required this.metricType,
+      required this.value,
+      this.secondaryValue,
+      this.notes,
+      required this.source,
+      required this.recordedAt,
+      required this.isSynced,
+      required this.isDeleted,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['patient_id'] = Variable<String>(patientId);
+    map['metric_type'] = Variable<String>(metricType);
+    map['value'] = Variable<double>(value);
+    if (!nullToAbsent || secondaryValue != null) {
+      map['secondary_value'] = Variable<double>(secondaryValue);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['source'] = Variable<String>(source);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  HealthLogsCompanion toCompanion(bool nullToAbsent) {
+    return HealthLogsCompanion(
+      id: Value(id),
+      patientId: Value(patientId),
+      metricType: Value(metricType),
+      value: Value(value),
+      secondaryValue: secondaryValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(secondaryValue),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      source: Value(source),
+      recordedAt: Value(recordedAt),
+      isSynced: Value(isSynced),
+      isDeleted: Value(isDeleted),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory HealthLog.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HealthLog(
+      id: serializer.fromJson<String>(json['id']),
+      patientId: serializer.fromJson<String>(json['patientId']),
+      metricType: serializer.fromJson<String>(json['metricType']),
+      value: serializer.fromJson<double>(json['value']),
+      secondaryValue: serializer.fromJson<double?>(json['secondaryValue']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      source: serializer.fromJson<String>(json['source']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'patientId': serializer.toJson<String>(patientId),
+      'metricType': serializer.toJson<String>(metricType),
+      'value': serializer.toJson<double>(value),
+      'secondaryValue': serializer.toJson<double?>(secondaryValue),
+      'notes': serializer.toJson<String?>(notes),
+      'source': serializer.toJson<String>(source),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  HealthLog copyWith(
+          {String? id,
+          String? patientId,
+          String? metricType,
+          double? value,
+          Value<double?> secondaryValue = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          String? source,
+          DateTime? recordedAt,
+          bool? isSynced,
+          bool? isDeleted,
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      HealthLog(
+        id: id ?? this.id,
+        patientId: patientId ?? this.patientId,
+        metricType: metricType ?? this.metricType,
+        value: value ?? this.value,
+        secondaryValue:
+            secondaryValue.present ? secondaryValue.value : this.secondaryValue,
+        notes: notes.present ? notes.value : this.notes,
+        source: source ?? this.source,
+        recordedAt: recordedAt ?? this.recordedAt,
+        isSynced: isSynced ?? this.isSynced,
+        isDeleted: isDeleted ?? this.isDeleted,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  HealthLog copyWithCompanion(HealthLogsCompanion data) {
+    return HealthLog(
+      id: data.id.present ? data.id.value : this.id,
+      patientId: data.patientId.present ? data.patientId.value : this.patientId,
+      metricType:
+          data.metricType.present ? data.metricType.value : this.metricType,
+      value: data.value.present ? data.value.value : this.value,
+      secondaryValue: data.secondaryValue.present
+          ? data.secondaryValue.value
+          : this.secondaryValue,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      source: data.source.present ? data.source.value : this.source,
+      recordedAt:
+          data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthLog(')
+          ..write('id: $id, ')
+          ..write('patientId: $patientId, ')
+          ..write('metricType: $metricType, ')
+          ..write('value: $value, ')
+          ..write('secondaryValue: $secondaryValue, ')
+          ..write('notes: $notes, ')
+          ..write('source: $source, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      patientId,
+      metricType,
+      value,
+      secondaryValue,
+      notes,
+      source,
+      recordedAt,
+      isSynced,
+      isDeleted,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HealthLog &&
+          other.id == this.id &&
+          other.patientId == this.patientId &&
+          other.metricType == this.metricType &&
+          other.value == this.value &&
+          other.secondaryValue == this.secondaryValue &&
+          other.notes == this.notes &&
+          other.source == this.source &&
+          other.recordedAt == this.recordedAt &&
+          other.isSynced == this.isSynced &&
+          other.isDeleted == this.isDeleted &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class HealthLogsCompanion extends UpdateCompanion<HealthLog> {
+  final Value<String> id;
+  final Value<String> patientId;
+  final Value<String> metricType;
+  final Value<double> value;
+  final Value<double?> secondaryValue;
+  final Value<String?> notes;
+  final Value<String> source;
+  final Value<DateTime> recordedAt;
+  final Value<bool> isSynced;
+  final Value<bool> isDeleted;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const HealthLogsCompanion({
+    this.id = const Value.absent(),
+    this.patientId = const Value.absent(),
+    this.metricType = const Value.absent(),
+    this.value = const Value.absent(),
+    this.secondaryValue = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HealthLogsCompanion.insert({
+    required String id,
+    required String patientId,
+    required String metricType,
+    required double value,
+    this.secondaryValue = const Value.absent(),
+    this.notes = const Value.absent(),
+    required String source,
+    required DateTime recordedAt,
+    this.isSynced = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        patientId = Value(patientId),
+        metricType = Value(metricType),
+        value = Value(value),
+        source = Value(source),
+        recordedAt = Value(recordedAt),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<HealthLog> custom({
+    Expression<String>? id,
+    Expression<String>? patientId,
+    Expression<String>? metricType,
+    Expression<double>? value,
+    Expression<double>? secondaryValue,
+    Expression<String>? notes,
+    Expression<String>? source,
+    Expression<DateTime>? recordedAt,
+    Expression<bool>? isSynced,
+    Expression<bool>? isDeleted,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (patientId != null) 'patient_id': patientId,
+      if (metricType != null) 'metric_type': metricType,
+      if (value != null) 'value': value,
+      if (secondaryValue != null) 'secondary_value': secondaryValue,
+      if (notes != null) 'notes': notes,
+      if (source != null) 'source': source,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HealthLogsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? patientId,
+      Value<String>? metricType,
+      Value<double>? value,
+      Value<double?>? secondaryValue,
+      Value<String?>? notes,
+      Value<String>? source,
+      Value<DateTime>? recordedAt,
+      Value<bool>? isSynced,
+      Value<bool>? isDeleted,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return HealthLogsCompanion(
+      id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
+      metricType: metricType ?? this.metricType,
+      value: value ?? this.value,
+      secondaryValue: secondaryValue ?? this.secondaryValue,
+      notes: notes ?? this.notes,
+      source: source ?? this.source,
+      recordedAt: recordedAt ?? this.recordedAt,
+      isSynced: isSynced ?? this.isSynced,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (patientId.present) {
+      map['patient_id'] = Variable<String>(patientId.value);
+    }
+    if (metricType.present) {
+      map['metric_type'] = Variable<String>(metricType.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (secondaryValue.present) {
+      map['secondary_value'] = Variable<double>(secondaryValue.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('patientId: $patientId, ')
+          ..write('metricType: $metricType, ')
+          ..write('value: $value, ')
+          ..write('secondaryValue: $secondaryValue, ')
+          ..write('notes: $notes, ')
+          ..write('source: $source, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $IntelligenceSnapshotsTable extends IntelligenceSnapshots
     with TableInfo<$IntelligenceSnapshotsTable, IntelligenceSnapshot> {
   @override
@@ -4220,11 +4823,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MedicinesTable medicines = $MedicinesTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
   late final $DoseLogsTable doseLogs = $DoseLogsTable(this);
+  late final $HealthLogsTable healthLogs = $HealthLogsTable(this);
   late final $IntelligenceSnapshotsTable intelligenceSnapshots =
       $IntelligenceSnapshotsTable(this);
   late final MedicinesDao medicinesDao = MedicinesDao(this as AppDatabase);
   late final RemindersDao remindersDao = RemindersDao(this as AppDatabase);
   late final DoseLogsDao doseLogsDao = DoseLogsDao(this as AppDatabase);
+  late final HealthLogsDao healthLogsDao = HealthLogsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4235,6 +4840,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         medicines,
         reminders,
         doseLogs,
+        healthLogs,
         intelligenceSnapshots
       ];
 }
@@ -5890,6 +6496,278 @@ typedef $$DoseLogsTableProcessedTableManager = ProcessedTableManager<
     (DoseLog, BaseReferences<_$AppDatabase, $DoseLogsTable, DoseLog>),
     DoseLog,
     PrefetchHooks Function()>;
+typedef $$HealthLogsTableCreateCompanionBuilder = HealthLogsCompanion Function({
+  required String id,
+  required String patientId,
+  required String metricType,
+  required double value,
+  Value<double?> secondaryValue,
+  Value<String?> notes,
+  required String source,
+  required DateTime recordedAt,
+  Value<bool> isSynced,
+  Value<bool> isDeleted,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$HealthLogsTableUpdateCompanionBuilder = HealthLogsCompanion Function({
+  Value<String> id,
+  Value<String> patientId,
+  Value<String> metricType,
+  Value<double> value,
+  Value<double?> secondaryValue,
+  Value<String?> notes,
+  Value<String> source,
+  Value<DateTime> recordedAt,
+  Value<bool> isSynced,
+  Value<bool> isDeleted,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$HealthLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $HealthLogsTable> {
+  $$HealthLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get patientId => $composableBuilder(
+      column: $table.patientId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metricType => $composableBuilder(
+      column: $table.metricType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get secondaryValue => $composableBuilder(
+      column: $table.secondaryValue,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+      column: $table.isSynced, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$HealthLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $HealthLogsTable> {
+  $$HealthLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get patientId => $composableBuilder(
+      column: $table.patientId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metricType => $composableBuilder(
+      column: $table.metricType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get secondaryValue => $composableBuilder(
+      column: $table.secondaryValue,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+      column: $table.isSynced, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+      column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$HealthLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HealthLogsTable> {
+  $$HealthLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get patientId =>
+      $composableBuilder(column: $table.patientId, builder: (column) => column);
+
+  GeneratedColumn<String> get metricType => $composableBuilder(
+      column: $table.metricType, builder: (column) => column);
+
+  GeneratedColumn<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<double> get secondaryValue => $composableBuilder(
+      column: $table.secondaryValue, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$HealthLogsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $HealthLogsTable,
+    HealthLog,
+    $$HealthLogsTableFilterComposer,
+    $$HealthLogsTableOrderingComposer,
+    $$HealthLogsTableAnnotationComposer,
+    $$HealthLogsTableCreateCompanionBuilder,
+    $$HealthLogsTableUpdateCompanionBuilder,
+    (HealthLog, BaseReferences<_$AppDatabase, $HealthLogsTable, HealthLog>),
+    HealthLog,
+    PrefetchHooks Function()> {
+  $$HealthLogsTableTableManager(_$AppDatabase db, $HealthLogsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HealthLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HealthLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HealthLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> patientId = const Value.absent(),
+            Value<String> metricType = const Value.absent(),
+            Value<double> value = const Value.absent(),
+            Value<double?> secondaryValue = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<DateTime> recordedAt = const Value.absent(),
+            Value<bool> isSynced = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthLogsCompanion(
+            id: id,
+            patientId: patientId,
+            metricType: metricType,
+            value: value,
+            secondaryValue: secondaryValue,
+            notes: notes,
+            source: source,
+            recordedAt: recordedAt,
+            isSynced: isSynced,
+            isDeleted: isDeleted,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String patientId,
+            required String metricType,
+            required double value,
+            Value<double?> secondaryValue = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            required String source,
+            required DateTime recordedAt,
+            Value<bool> isSynced = const Value.absent(),
+            Value<bool> isDeleted = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthLogsCompanion.insert(
+            id: id,
+            patientId: patientId,
+            metricType: metricType,
+            value: value,
+            secondaryValue: secondaryValue,
+            notes: notes,
+            source: source,
+            recordedAt: recordedAt,
+            isSynced: isSynced,
+            isDeleted: isDeleted,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$HealthLogsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $HealthLogsTable,
+    HealthLog,
+    $$HealthLogsTableFilterComposer,
+    $$HealthLogsTableOrderingComposer,
+    $$HealthLogsTableAnnotationComposer,
+    $$HealthLogsTableCreateCompanionBuilder,
+    $$HealthLogsTableUpdateCompanionBuilder,
+    (HealthLog, BaseReferences<_$AppDatabase, $HealthLogsTable, HealthLog>),
+    HealthLog,
+    PrefetchHooks Function()>;
 typedef $$IntelligenceSnapshotsTableCreateCompanionBuilder
     = IntelligenceSnapshotsCompanion Function({
   required String id,
@@ -6132,6 +7010,8 @@ class $AppDatabaseManager {
       $$RemindersTableTableManager(_db, _db.reminders);
   $$DoseLogsTableTableManager get doseLogs =>
       $$DoseLogsTableTableManager(_db, _db.doseLogs);
+  $$HealthLogsTableTableManager get healthLogs =>
+      $$HealthLogsTableTableManager(_db, _db.healthLogs);
   $$IntelligenceSnapshotsTableTableManager get intelligenceSnapshots =>
       $$IntelligenceSnapshotsTableTableManager(_db, _db.intelligenceSnapshots);
 }

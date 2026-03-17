@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 
 import 'daos/dose_logs_dao.dart';
+import 'daos/health_logs_dao.dart';
 import 'daos/medicines_dao.dart';
 import 'daos/reminders_dao.dart';
 import 'database_connection.dart';
 import 'tables/dose_logs.dart';
+import 'tables/health_logs.dart';
 import 'tables/intelligence_snapshots.dart';
 import 'tables/medicines.dart';
 import 'tables/patient_profiles.dart';
@@ -20,12 +22,14 @@ part 'app_database.g.dart';
     Medicines,
     Reminders,
     DoseLogs,
+    HealthLogs,
     IntelligenceSnapshots,
   ],
   daos: [
     MedicinesDao,
     RemindersDao,
     DoseLogsDao,
+    HealthLogsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -34,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   static const int maxSyncRetries = 3;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -64,6 +68,10 @@ class AppDatabase extends _$AppDatabase {
 
           if (from < 6) {
             await m.createTable(intelligenceSnapshots);
+          }
+
+          if (from < 7) {
+            await m.createTable(healthLogs);
           }
         },
       );
