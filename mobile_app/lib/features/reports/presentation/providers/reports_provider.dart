@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ─── REPORT SECTION MODEL ────────────────────────────────────────────────────
-
 class ReportSection {
   final String id;
   final String title;
@@ -16,8 +14,6 @@ class ReportSection {
   });
 }
 
-// ─── REPORT HISTORY MODEL ────────────────────────────────────────────────────
-
 class ReportHistoryItem {
   final String id;
   final String title;
@@ -25,6 +21,7 @@ class ReportHistoryItem {
   final DateTime generatedAt;
   final String templateName;
   final int pageCount;
+  final String? filePath;
 
   const ReportHistoryItem({
     required this.id,
@@ -33,10 +30,9 @@ class ReportHistoryItem {
     required this.generatedAt,
     required this.templateName,
     required this.pageCount,
+    this.filePath,
   });
 }
-
-// ─── REPORT TEMPLATE MODEL ───────────────────────────────────────────────────
 
 class ReportTemplate {
   final String id;
@@ -51,8 +47,6 @@ class ReportTemplate {
     required this.icon,
   });
 }
-
-// ─── PDF DESIGN STATE ────────────────────────────────────────────────────────
 
 class PdfDesignState {
   final String colorSchemeId;
@@ -93,8 +87,6 @@ class PdfDesignState {
     );
   }
 }
-
-// ─── STATE ───────────────────────────────────────────────────────────────────
 
 class ReportsState {
   final bool isLoading;
@@ -163,32 +155,7 @@ class ReportsState {
           isEnabled: true,
         ),
       ],
-      history: [
-        ReportHistoryItem(
-          id: 'rh_001',
-          title: "Doctor's Summary – Feb 2025",
-          dateRange: '1 Feb – 28 Feb 2025',
-          generatedAt: DateTime.now().subtract(const Duration(days: 14)),
-          templateName: "Doctor's Report",
-          pageCount: 3,
-        ),
-        ReportHistoryItem(
-          id: 'rh_002',
-          title: 'Monthly Compliance – Jan 2025',
-          dateRange: '1 Jan – 31 Jan 2025',
-          generatedAt: DateTime.now().subtract(const Duration(days: 45)),
-          templateName: 'Compliance Report',
-          pageCount: 2,
-        ),
-        ReportHistoryItem(
-          id: 'rh_003',
-          title: 'Health Vitals – Dec 2024',
-          dateRange: '1 Dec – 31 Dec 2024',
-          generatedAt: DateTime.now().subtract(const Duration(days: 75)),
-          templateName: 'Vitals Report',
-          pageCount: 4,
-        ),
-      ],
+      history: const [],
     );
   }
 
@@ -225,8 +192,6 @@ class ReportsState {
   bool get hasError => errorMessage != null;
 }
 
-// ─── NOTIFIER ────────────────────────────────────────────────────────────────
-
 class ReportsNotifier extends StateNotifier<ReportsState> {
   ReportsNotifier() : super(ReportsState.initial());
 
@@ -250,6 +215,7 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
       }
       return s;
     }).toList();
+
     state = state.copyWith(sections: updated);
   }
 
@@ -257,17 +223,21 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
     state = state.copyWith(pdfDesign: design);
   }
 
-  Future<void> generateReport() async {
-    state = state.copyWith(isExporting: true, exportSuccess: false);
-    await Future.delayed(const Duration(milliseconds: 1800));
+  void setExporting(bool value) {
+    state = state.copyWith(
+      isExporting: value,
+      exportSuccess: value ? false : state.exportSuccess,
+    );
+  }
 
-    final now = DateTime.now();
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-
+  void addGeneratedReport({
+    required String title,
+    required String dateRange,
+    required int pageCount,
+    required String filePath,
+  }) {
     String templateName = 'Report';
+
     switch (state.selectedTemplateId) {
       case 'template_doctor':
         templateName = "Doctor's Report";
@@ -280,19 +250,14 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
         break;
     }
 
-    final startFmt =
-        '${state.startDate.day} ${months[state.startDate.month - 1]}';
-    final endFmt =
-        '${state.endDate.day} ${months[state.endDate.month - 1]} ${state.endDate.year}';
-    final dateRange = '$startFmt – $endFmt';
-
     final newItem = ReportHistoryItem(
-      id: 'rh_${now.millisecondsSinceEpoch}',
-      title: '$templateName – ${months[now.month - 1]} ${now.year}',
+      id: 'rh_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
       dateRange: dateRange,
-      generatedAt: now,
+      generatedAt: DateTime.now(),
       templateName: templateName,
-      pageCount: state.enabledSections.length + 1,
+      pageCount: pageCount,
+      filePath: filePath,
     );
 
     state = state.copyWith(
@@ -311,8 +276,6 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
     state = state.copyWith(history: updated);
   }
 }
-
-// ─── PROVIDERS ───────────────────────────────────────────────────────────────
 
 final reportsProvider =
     StateNotifierProvider<ReportsNotifier, ReportsState>((ref) {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -36,7 +38,7 @@ class DeviceTokenModel {
   }
 
   factory DeviceTokenModel.fromMap(Map<String, dynamic> map) {
-    DateTime? _readDate(dynamic value) {
+    DateTime? readDate(dynamic value) {
       if (value == null) return null;
       if (value is Timestamp) return value.toDate();
       if (value is DateTime) return value;
@@ -49,9 +51,9 @@ class DeviceTokenModel {
       platform: (map['platform'] ?? 'unknown') as String,
       appVersion: (map['appVersion'] ?? '1.0.0') as String,
       isActive: (map['isActive'] ?? true) as bool,
-      createdAt: _readDate(map['createdAt']) ?? DateTime.now(),
-      updatedAt: _readDate(map['updatedAt']) ?? DateTime.now(),
-      lastSeenAt: _readDate(map['lastSeenAt']) ?? DateTime.now(),
+      createdAt: readDate(map['createdAt']) ?? DateTime.now(),
+      updatedAt: readDate(map['updatedAt']) ?? DateTime.now(),
+      lastSeenAt: readDate(map['lastSeenAt']) ?? DateTime.now(),
     );
   }
 
@@ -61,8 +63,13 @@ class DeviceTokenModel {
   }) {
     final now = DateTime.now();
     final platform = defaultTargetPlatform.name;
-    final deviceId =
-        '${platform}_${token.hashCode.abs().toRadixString(16)}';
+
+    // Stable deterministic ID from token bytes
+    final encodedToken = base64Url.encode(utf8.encode(token));
+    final safeTokenPart =
+        encodedToken.length > 80 ? encodedToken.substring(0, 80) : encodedToken;
+
+    final deviceId = '${platform}_$safeTokenPart';
 
     return DeviceTokenModel(
       deviceId: deviceId,
