@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { Doctor } from "../types";
-import { MOCK_DOCTOR } from "../data/mockData";
+import { authService } from "../services/authService";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -16,26 +16,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("aayutrack_auth");
-    if (stored) {
+    const session = authService.getSession();
+    if (session) {
       setIsAuthenticated(true);
-      setDoctor(MOCK_DOCTOR);
+      setDoctor(session);
     }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock auth — accept any non-empty credentials
-    if (email.trim() && password.trim()) {
-      sessionStorage.setItem("aayutrack_auth", "true");
+    const doc = await authService.login(email, password);
+    if (doc) {
       setIsAuthenticated(true);
-      setDoctor(MOCK_DOCTOR);
+      setDoctor(doc);
       return true;
     }
     return false;
   };
 
   const logout = () => {
-    sessionStorage.removeItem("aayutrack_auth");
+    authService.logout();
     setIsAuthenticated(false);
     setDoctor(null);
   };

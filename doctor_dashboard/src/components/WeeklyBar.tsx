@@ -1,4 +1,4 @@
-export function WeeklyBar({ data }: { data: number[]; color?: string }) {
+export function WeeklyBar({ data }: { data: number[] }) {
   const days = ["M", "T", "W", "T", "F", "S", "S"];
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 48 }}>
@@ -12,6 +12,7 @@ export function WeeklyBar({ data }: { data: number[]; color?: string }) {
               background: barColor,
               borderRadius: 3,
               transition: "height 0.5s ease",
+              minHeight: 2,
             }} />
             <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{days[i]}</span>
           </div>

@@ -1,6 +1,6 @@
 {
   "name": "aayutrack-doctor-dashboard",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "AAYUTRACK Doctor Dashboard - Remote Patient Monitoring",
   "scripts": {
@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

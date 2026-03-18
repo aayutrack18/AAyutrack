@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
-import type { TabId } from "./types";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { DashboardProvider, useDashboard } from "./context/DashboardContext";
+import { DashboardProvider } from "./context/DashboardContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
-import { Topbar } from "./layout/Topbar";
+import { DashboardLayout } from "./layout/DashboardLayout";
+import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { PatientsPage } from "./pages/PatientsPage";
+import { PatientDetailPage } from "./pages/PatientDetailPage";
 import { AlertsPage } from "./pages/AlertsPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { MessagesPage } from "./pages/MessagesPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 
 const GlobalStyles = () => (
   <style>{`
@@ -19,81 +22,41 @@ const GlobalStyles = () => (
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     input, textarea, select { font-family: inherit; }
     button { font-family: inherit; cursor: pointer; border: none; outline: none; }
-    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: #f8fafc; }
+    a { text-decoration: none; color: inherit; }
   `}</style>
 );
-
-function DashboardShell() {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [isLoaded, setIsLoaded] = useState(false);
-  const { patients } = useDashboard();
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 80);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Compute alerts with patient reference here — single source of truth
-  const allAlerts = patients.flatMap(p =>
-    p.alerts.map(a => ({ ...a, patient: p }))
-  );
-  const unreadCount = allAlerts.filter(a => !a.isRead).length;
-
-  return (
-    <div style={{
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-      background: "#f8fafc",
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      opacity: isLoaded ? 1 : 0,
-      transition: "opacity 0.35s ease",
-    }}>
-      <GlobalStyles />
-
-      <Topbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        unreadCount={unreadCount}
-      />
-
-      <main style={{
-        flex: 1,
-        padding: "28px 24px",
-        maxWidth: 1300,
-        margin: "0 auto",
-        width: "100%",
-      }}>
-        {activeTab === "overview" && (
-          <OverviewPage
-            setActiveTab={setActiveTab}
-            allAlerts={allAlerts}
-            unreadCount={unreadCount}
-          />
-        )}
-        {activeTab === "patients" && (
-          <PatientsPage setActiveTab={setActiveTab} />
-        )}
-        {activeTab === "alerts" && (
-          <AlertsPage
-            setActiveTab={setActiveTab}
-            allAlerts={allAlerts}
-          />
-        )}
-        {activeTab === "reports" && <ReportsPage />}
-        {activeTab === "messages" && <MessagesPage />}
-      </main>
-    </div>
-  );
-}
 
 export default function App() {
   return (
     <AuthProvider>
       <DashboardProvider>
-        <ProtectedRoute>
-          <DashboardShell />
-        </ProtectedRoute>
+        <GlobalStyles />
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected — all inside DashboardLayout shell */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard"       element={<OverviewPage />} />
+            <Route path="/patients"        element={<PatientsPage />} />
+            <Route path="/patients/:id"    element={<PatientDetailPage />} />
+            <Route path="/alerts"          element={<AlertsPage />} />
+            <Route path="/analytics"       element={<AnalyticsPage />} />
+            <Route path="/reports"         element={<ReportsPage />} />
+            <Route path="/messages"        element={<MessagesPage />} />
+          </Route>
+
+          {/* Redirects + 404 */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </DashboardProvider>
     </AuthProvider>
   );

@@ -13,7 +13,6 @@ import 'package:aayutrack/features/medicine/presentation/providers/medicine_prov
 import 'package:aayutrack/features/profile/presentation/providers/profile_provider.dart';
 import 'package:aayutrack/features/reports/presentation/providers/reports_provider.dart';
 import 'package:aayutrack/features/reports/presentation/screens/report_preview_screen.dart';
-import 'package:aayutrack/features/reports/presentation/services/report_export_service.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -71,33 +70,13 @@ class _GenerateTab extends ConsumerWidget {
   const _GenerateTab();
 
   Future<void> _quickSave(BuildContext context, WidgetRef ref) async {
-    final reportsState = ref.read(reportsProvider);
-    final compliance = ref.read(complianceProvider);
-    final medicines = ref.read(medicineProvider);
-    final healthLogs = ref.read(healthLogProvider);
-    final profile = ref.read(profileProvider).profile;
     final notifier = ref.read(reportsProvider.notifier);
+    final result = await notifier.generateReport();
+    final state = ref.read(reportsProvider);
 
-    try {
-      notifier.setExporting(true);
+    if (!context.mounted) return;
 
-      final result = await ReportExportService.saveReport(
-        reportsState: reportsState,
-        compliance: compliance,
-        medicines: medicines,
-        healthLogs: healthLogs,
-        profile: profile,
-      );
-
-      notifier.addGeneratedReport(
-        title: result.title,
-        dateRange: result.dateRange,
-        pageCount: result.pageCount,
-        filePath: result.file.path,
-      );
-
-      if (!context.mounted) return;
-
+    if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('PDF report saved.\n${result.file.path}'),
@@ -105,14 +84,42 @@ class _GenerateTab extends ConsumerWidget {
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } catch (e) {
-      notifier.setExporting(false);
+      return;
+    }
 
-      if (!context.mounted) return;
-
+    if (state.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to export report: $e'),
+          content: Text(state.errorMessage!),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _quickShare(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(reportsProvider.notifier);
+    final result = await notifier.shareLatestReport();
+    final state = ref.read(reportsProvider);
+
+    if (!context.mounted) return;
+
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Report shared successfully.'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (state.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage!),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -126,11 +133,78 @@ class _GenerateTab extends ConsumerWidget {
     final compliance = ref.watch(complianceProvider);
     final medicines = ref.watch(medicineProvider);
     final healthLogs = ref.watch(healthLogProvider);
+    final profileState = ref.watch(profileProvider);
     final templates = ref.watch(reportTemplatesProvider);
+
+    final isBaseDataLoading = compliance.isLoading ||
+        medicines.isLoading ||
+        healthLogs.isLoading ||
+        profileState.isLoading;
+
+    final providerErrors = <String>[
+      if (compliance.hasError) compliance.errorMessage ?? '',
+      if (medicines.hasError) medicines.errorMessage ?? '',
+      if (healthLogs.hasError) healthLogs.errorMessage ?? '',
+      if (profileState.errorMessage != null &&
+          profileState.errorMessage!.trim().isNotEmpty)
+        profileState.errorMessage!,
+    ].where((message) => message.trim().isNotEmpty).toList();
+
+    final hasSupportingData = medicines.medicines.isNotEmpty ||
+        healthLogs.logs.isNotEmpty ||
+        profileState.profile != null ||
+        compliance.hasAnyData ||
+        compliance.alerts.isNotEmpty;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
+        if (isBaseDataLoading) ...[
+          const _InlineMessageCard(
+            icon: Icons.sync_rounded,
+            title: 'Preparing report data',
+            message:
+                'AAYUTRACK is loading your latest profile, medicines, health logs, and compliance summary.',
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (reportsState.hasError) ...[
+          _InlineMessageCard(
+            icon: Icons.error_outline_rounded,
+            title: 'Report action failed',
+            message: reportsState.errorMessage!,
+            color: AppColors.danger,
+            trailing: TextButton(
+              onPressed: () => ref.read(reportsProvider.notifier).clearError(),
+              child: const Text('Dismiss'),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (providerErrors.isNotEmpty) ...[
+          _InlineMessageCard(
+            icon: Icons.warning_amber_rounded,
+            title: 'Some report data could not be loaded',
+            message: providerErrors.join('\n'),
+            color: AppColors.warning,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (reportsState.exportSuccess) ...[
+          _InlineMessageCard(
+            icon: Icons.check_circle_outline_rounded,
+            title: 'Latest report ready',
+            message:
+                'Your report has been added to history and is ready to share again from the History tab.',
+            color: AppColors.success,
+            trailing: TextButton(
+              onPressed: () => ref.read(reportsProvider.notifier).clearExportSuccess(),
+              child: const Text('Dismiss'),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         GradientCard(
           colors: const [AppColors.primary, Color(0xFF1E40AF)],
           child: Column(
@@ -152,36 +226,38 @@ class _GenerateTab extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          compliance.scoreLabel,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            compliance.scoreLabel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${compliance.unreadAlertCount} active alert${compliance.unreadAlertCount == 1 ? '' : 's'}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 11,
+                        const SizedBox(height: 6),
+                        Text(
+                          '${compliance.unreadAlertCount} active alert${compliance.unreadAlertCount == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -199,6 +275,14 @@ class _GenerateTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
+        _DataReadinessCard(
+          hasSupportingData: hasSupportingData,
+          profileAvailable: profileState.profile != null,
+          activeMedicineCount: medicines.activeMedicines.length,
+          totalLogCount: healthLogs.logs.length,
+          enabledSectionCount: reportsState.enabledSections.length,
+        ),
+        const SizedBox(height: 20),
         const SectionHeader(title: 'Key Metrics'),
         const SizedBox(height: 10),
         GridView.count(
@@ -238,66 +322,83 @@ class _GenerateTab extends ConsumerWidget {
         const SizedBox(height: 20),
         const SectionHeader(title: 'Weekly Adherence Trend'),
         const SizedBox(height: 10),
-        AppCard(
-          child: SizedBox(
-            height: 120,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: compliance.weeklyTrend.map((w) {
-                final pct = w.percentage / 100;
-                final barColor = w.percentage >= 90
-                    ? AppColors.success
-                    : w.percentage >= 60
-                        ? AppColors.warning
-                        : AppColors.danger;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${w.percentage.toInt()}',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: barColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 30,
-                      height: 90 * pct,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [barColor.withOpacity(0.6), barColor],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+        if (compliance.weeklyTrend.isEmpty)
+          const AppCard(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'No weekly adherence trend is available yet. Add dose activity to see real report insights here.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          )
+        else
+          AppCard(
+            child: SizedBox(
+              height: 120,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: compliance.weeklyTrend.map((entry) {
+                  final pct = entry.percentage / 100;
+                  final barColor = entry.percentage >= 90
+                      ? AppColors.success
+                      : entry.percentage >= 60
+                          ? AppColors.warning
+                          : AppColors.danger;
+                  return Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${entry.percentage.toInt()}',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: barColor,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                        const SizedBox(height: 4),
+                        Container(
+                          width: 26,
+                          height: 90 * pct.clamp(0.0, 1.0),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [barColor.withOpacity(0.6), barColor],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          entry.day,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      w.day,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 20),
         const SectionHeader(title: 'Report Template'),
         const SizedBox(height: 10),
-        ...templates.map((t) {
-          final isSelected = reportsState.selectedTemplateId == t.id;
+        ...templates.map((template) {
+          final isSelected = reportsState.selectedTemplateId == template.id;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: GestureDetector(
-              onTap: () => ref.read(reportsProvider.notifier).setTemplate(t.id),
+              onTap: () => ref.read(reportsProvider.notifier).setTemplate(template.id),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
@@ -314,20 +415,20 @@ class _GenerateTab extends ConsumerWidget {
                       color: AppColors.shadow,
                       blurRadius: 12,
                       offset: Offset(0, 3),
-                    )
+                    ),
                   ],
                 ),
                 padding: const EdgeInsets.all(14),
                 child: Row(
                   children: [
-                    Text(t.icon, style: const TextStyle(fontSize: 28)),
+                    Text(template.icon, style: const TextStyle(fontSize: 28)),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            t.name,
+                            template.name,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -338,7 +439,7 @@ class _GenerateTab extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            t.description,
+                            template.description,
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
@@ -365,12 +466,12 @@ class _GenerateTab extends ConsumerWidget {
         AppCard(
           child: Column(
             children: reportsState.sections.asMap().entries.map((entry) {
-              final idx = entry.key;
+              final index = entry.key;
               final section = entry.value;
 
               return Column(
                 children: [
-                  if (idx > 0)
+                  if (index > 0)
                     const Divider(color: AppColors.border, height: 1),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
@@ -413,6 +514,17 @@ class _GenerateTab extends ConsumerWidget {
             }).toList(),
           ),
         ),
+        if (!reportsState.hasEnabledSections) ...[
+          const SizedBox(height: 10),
+          const Text(
+            'Select at least one section to generate a report.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.danger,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         _DateRangeSelector(
           startDate: reportsState.startDate,
@@ -422,10 +534,12 @@ class _GenerateTab extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         AppButton(
-          label: reportsState.isExporting ? 'Generating…' : 'Preview Report',
+          label: reportsState.isExporting ? 'Preparing…' : 'Preview Report',
           icon: Icons.visibility_rounded,
-          isLoading: reportsState.isExporting,
-          onPressed: reportsState.isExporting
+          isLoading: false,
+          onPressed: reportsState.isExporting ||
+                  isBaseDataLoading ||
+                  !reportsState.canGenerate
               ? null
               : () => Navigator.push(
                     context,
@@ -435,14 +549,35 @@ class _GenerateTab extends ConsumerWidget {
                   ),
         ),
         const SizedBox(height: 10),
-        AppButton(
-          label: 'Export as PDF',
-          icon: Icons.picture_as_pdf_rounded,
-          outlined: true,
-          isLoading: reportsState.isExporting,
-          onPressed: reportsState.isExporting
-              ? null
-              : () => _quickSave(context, ref),
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                label: 'Export PDF',
+                icon: Icons.picture_as_pdf_rounded,
+                outlined: true,
+                isLoading: reportsState.isExporting,
+                onPressed: reportsState.isExporting ||
+                        isBaseDataLoading ||
+                        !reportsState.canGenerate
+                    ? null
+                    : () => _quickSave(context, ref),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AppButton(
+                label: 'Share PDF',
+                icon: Icons.share_rounded,
+                isLoading: false,
+                onPressed: reportsState.isExporting ||
+                        isBaseDataLoading ||
+                        !reportsState.canGenerate
+                    ? null
+                    : () => _quickShare(context, ref),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
       ],
@@ -466,7 +601,7 @@ class _HistoryTab extends ConsumerWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -554,7 +689,7 @@ class _HistoryTab extends ConsumerWidget {
                       ),
                     ),
                     const Text(
-                      'Tap to preview or share',
+                      'Saved PDFs can be reshared from here.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
@@ -571,123 +706,129 @@ class _HistoryTab extends ConsumerWidget {
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: AppCard(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                          ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.dateRange,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textMuted,
-                          ),
+                        child: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          color: AppColors.primary,
+                          size: 22,
                         ),
-                        const SizedBox(height: 3),
-                        Row(
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            StatusChip(
-                              label: item.templateName,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
                             Text(
-                              '${item.pageCount} pages',
+                              item.title,
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.dateRange,
+                              style: const TextStyle(
+                                fontSize: 11,
                                 color: AppColors.textMuted,
                               ),
                             ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                StatusChip(
+                                  label: item.templateName,
+                                  color: AppColors.primary,
+                                ),
+                                Text(
+                                  '${item.pageCount} pages',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDate(item.generatedAt),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Text(
-                        _formatDate(item.generatedAt),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ReportPreviewScreen(),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.visibility_rounded,
-                              size: 18,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => _shareHistoryItem(context, item),
-                            child: Icon(
-                              Icons.share_rounded,
-                              size: 18,
-                              color: item.filePath != null
-                                  ? AppColors.textMuted
-                                  : AppColors.border,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () async {
-                              final confirm = await showConfirmationSheet(
-                                context,
-                                title: 'Delete Report',
-                                message: 'Delete "${item.title}"?',
-                                confirmLabel: 'Delete',
-                                isDangerous: true,
-                              );
-                              if (confirm == true) {
-                                ref
-                                    .read(reportsProvider.notifier)
-                                    .deleteHistory(item.id);
-                              }
-                            },
-                            child: const Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: AppColors.danger,
-                            ),
-                          ),
-                        ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'Preview Current Setup',
+                          icon: Icons.visibility_rounded,
+                          outlined: true,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ReportPreviewScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: AppButton(
+                          label: 'Share Again',
+                          icon: Icons.share_rounded,
+                          onPressed: () => _shareHistoryItem(context, item),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final confirm = await showConfirmationSheet(
+                          context,
+                          title: 'Delete Report',
+                          message: 'Delete "${item.title}"?',
+                          confirmLabel: 'Delete',
+                          isDangerous: true,
+                        );
+                        if (confirm == true) {
+                          ref.read(reportsProvider.notifier).deleteHistory(item.id);
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.danger,
+                      ),
+                      label: const Text(
+                        'Delete',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -711,7 +852,7 @@ class _DateRangeSelector extends StatelessWidget {
   });
 
   String _fmt(DateTime dt) {
-    const m = [
+    const months = [
       'Jan',
       'Feb',
       'Mar',
@@ -723,13 +864,15 @@ class _DateRangeSelector extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
-    return '${dt.day} ${m[dt.month - 1]} ${dt.year}';
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasInvalidRange = endDate.isBefore(startDate);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,9 +982,20 @@ class _DateRangeSelector extends StatelessWidget {
               ),
             ],
           ),
+          if (hasInvalidRange) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'End date cannot be earlier than start date.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.danger,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
               _PresetChip(
                 label: 'This Month',
@@ -861,7 +1015,8 @@ class _DateRangeSelector extends StatelessWidget {
                 label: 'Last 3 months',
                 onTap: () {
                   final now = DateTime.now();
-                  onChanged(DateTime(now.year, now.month - 3, now.day), now);
+                  final month = now.month - 3;
+                  onChanged(DateTime(now.year, month, now.day), now);
                 },
               ),
             ],
@@ -940,6 +1095,170 @@ class _MetricTile extends StatelessWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMessageCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color color;
+  final Widget? trailing;
+
+  const _InlineMessageCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.color,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: color.withOpacity(0.06),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (trailing != null) ...[
+            const SizedBox(height: 8),
+            Align(alignment: Alignment.centerRight, child: trailing!),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DataReadinessCard extends StatelessWidget {
+  final bool hasSupportingData;
+  final bool profileAvailable;
+  final int activeMedicineCount;
+  final int totalLogCount;
+  final int enabledSectionCount;
+
+  const _DataReadinessCard({
+    required this.hasSupportingData,
+    required this.profileAvailable,
+    required this.activeMedicineCount,
+    required this.totalLogCount,
+    required this.enabledSectionCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = hasSupportingData
+        ? 'Report data is connected to live providers'
+        : 'Start adding data for richer reports';
+
+    final message = hasSupportingData
+        ? 'This report will use your current profile, medicines, health logs, and compliance insights from the live app state.'
+        : 'You can still generate a basic report, but adding profile details, medicines, and health logs will make the report more useful for demos and doctor sharing.';
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.verified_outlined,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              StatusChip(
+                label: profileAvailable ? 'Profile ready' : 'Profile missing',
+                color: profileAvailable ? AppColors.success : AppColors.warning,
+              ),
+              StatusChip(
+                label: '$activeMedicineCount medicines',
+                color: AppColors.primary,
+              ),
+              StatusChip(
+                label: '$totalLogCount logs',
+                color: AppColors.accent,
+              ),
+              StatusChip(
+                label: '$enabledSectionCount sections enabled',
+                color: AppColors.primary,
+              ),
+            ],
           ),
         ],
       ),

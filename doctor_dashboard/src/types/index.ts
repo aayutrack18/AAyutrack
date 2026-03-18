@@ -1,8 +1,7 @@
-// ─── DOMAIN TYPES ────────────────────────────────────────────────────────────
+// ─── DOMAIN TYPES ─────────────────────────────────────────────────────────────
 
 export type Severity = "high" | "medium" | "low";
 export type MetricType = "bp" | "sugar" | "heart" | "weight" | "oxygen" | "temp";
-export type TabId = "overview" | "patients" | "alerts" | "reports" | "messages";
 
 export interface Patient {
   id: string;
@@ -65,4 +64,15 @@ export interface SentMessage {
   pid: string;
   text: string;
   time: string;
+}
+
+export interface Report {
+  id: string;
+  patient: string;
+  patientId: string | null;
+  title: string;
+  type: "Compliance" | "Vitals" | "Adherence" | "Monitoring" | "Summary";
+  date: string;
+  status: "Ready" | "Pending" | "Generating";
+  period: string;
 }

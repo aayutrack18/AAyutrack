@@ -193,9 +193,14 @@ class ReportsState {
   }
 
   List<ReportSection> get enabledSections =>
-      sections.where((s) => s.isEnabled).toList();
+      sections.where((section) => section.isEnabled).toList();
 
-  bool get hasError => errorMessage != null;
+  bool get hasError => errorMessage != null && errorMessage!.trim().isNotEmpty;
+  bool get hasHistory => history.isNotEmpty;
+  bool get hasValidDateRange => !endDate.isBefore(startDate);
+  bool get hasEnabledSections => enabledSections.isNotEmpty;
+
+  bool get canGenerate => hasValidDateRange && hasEnabledSections;
 }
 
 class ReportsNotifier extends StateNotifier<ReportsState> {
@@ -215,23 +220,28 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
       startDate: start,
       endDate: end,
       exportSuccess: false,
+      clearError: true,
     );
   }
 
   void toggleSection(String sectionId) {
-    final updated = state.sections.map((s) {
-      if (s.id == sectionId) {
+    final updated = state.sections.map((section) {
+      if (section.id == sectionId) {
         return ReportSection(
-          id: s.id,
-          title: s.title,
-          description: s.description,
-          isEnabled: !s.isEnabled,
+          id: section.id,
+          title: section.title,
+          description: section.description,
+          isEnabled: !section.isEnabled,
         );
       }
-      return s;
+      return section;
     }).toList();
 
-    state = state.copyWith(sections: updated);
+    state = state.copyWith(
+      sections: updated,
+      exportSuccess: false,
+      clearError: true,
+    );
   }
 
   void updatePdfDesign(PdfDesignState design) {
@@ -245,7 +255,29 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
     );
   }
 
-  Future<void> generateReport() async {
+  String? _validateBeforeExport() {
+    if (!state.hasEnabledSections) {
+      return 'Enable at least one section before generating a report.';
+    }
+
+    if (!state.hasValidDateRange) {
+      return 'The selected date range is invalid. Please review the start and end dates.';
+    }
+
+    return null;
+  }
+
+  Future<ReportExportResult?> generateReport() async {
+    final validationError = _validateBeforeExport();
+    if (validationError != null) {
+      state = state.copyWith(
+        isExporting: false,
+        exportSuccess: false,
+        errorMessage: validationError,
+      );
+      return null;
+    }
+
     state = state.copyWith(
       isExporting: true,
       exportSuccess: false,
@@ -272,16 +304,29 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
         pageCount: result.pageCount,
         filePath: result.file.path,
       );
+
+      return result;
     } catch (e) {
       state = state.copyWith(
         isExporting: false,
         exportSuccess: false,
         errorMessage: 'Failed to generate report: $e',
       );
+      return null;
     }
   }
 
-  Future<void> shareLatestReport() async {
+  Future<ReportExportResult?> shareLatestReport() async {
+    final validationError = _validateBeforeExport();
+    if (validationError != null) {
+      state = state.copyWith(
+        isExporting: false,
+        exportSuccess: false,
+        errorMessage: validationError,
+      );
+      return null;
+    }
+
     state = state.copyWith(
       isExporting: true,
       exportSuccess: false,
@@ -308,12 +353,15 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
         pageCount: result.pageCount,
         filePath: result.file.path,
       );
+
+      return result;
     } catch (e) {
       state = state.copyWith(
         isExporting: false,
         exportSuccess: false,
         errorMessage: 'Failed to share report: $e',
       );
+      return null;
     }
   }
 
@@ -364,7 +412,7 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
   }
 
   void deleteHistory(String id) {
-    final updated = state.history.where((h) => h.id != id).toList();
+    final updated = state.history.where((item) => item.id != id).toList();
     state = state.copyWith(history: updated);
   }
 }
