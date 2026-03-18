@@ -8,7 +8,7 @@ import 'package:aayutrack/features/medicine/domain/entities/medicine.dart'
 class MedicineModel extends domain.Medicine {
   const MedicineModel({
     required String id,
-    String patientId = 'default_patient',
+    required String patientId,
     required String name,
     required String dosage,
     required String frequency,
@@ -88,6 +88,34 @@ class MedicineModel extends domain.Medicine {
     );
   }
 
+  factory MedicineModel.fromJson(Map<String, dynamic> json) {
+    return MedicineModel(
+      id: json['id'] as String? ?? '',
+      patientId: json['patientId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      dosage: json['dosage'] as String? ?? '',
+      frequency: json['frequency'] as String? ?? '',
+      form: json['form'] as String? ?? '',
+      instructions: json['instructions'] as String? ?? '',
+      scheduledTimes: (json['scheduledTimes'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      startDate: DateTime.tryParse(json['startDate'] as String? ?? '') ??
+          DateTime.now(),
+      endDate: json['endDate'] != null
+          ? DateTime.tryParse(json['endDate'] as String)
+          : null,
+      isActive: json['isActive'] as bool? ?? true,
+      color: json['color'] as String? ?? '#1D4ED8',
+      isSynced: json['isSynced'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
+
   db.MedicinesCompanion toCompanion() {
     return db.MedicinesCompanion(
       id: Value(id),
@@ -109,7 +137,7 @@ class MedicineModel extends domain.Medicine {
     );
   }
 
-  Map<String, dynamic> toSyncPayload() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'patientId': patientId,
@@ -128,6 +156,10 @@ class MedicineModel extends domain.Medicine {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+  }
+
+  Map<String, dynamic> toSyncPayload() {
+    return toJson();
   }
 
   MedicineModel copyWithModel({

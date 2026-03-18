@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:aayutrack/features/reports/presentation/services/report_storage_service.dart';
 
 import '../database/app_database.dart';
 import 'dose_log_sync_service.dart';
@@ -19,6 +23,14 @@ final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
+final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
+
+final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
+  return FirebaseStorage.instance;
+});
+
 final connectivityProvider = Provider<Connectivity>((ref) {
   return Connectivity();
 });
@@ -33,6 +45,7 @@ final profileSyncServiceProvider = Provider<ProfileSyncService>((ref) {
     syncQueueService: ref.watch(syncQueueServiceProvider),
     firestore: ref.watch(firebaseFirestoreProvider),
     connectivity: ref.watch(connectivityProvider),
+    auth: ref.watch(firebaseAuthProvider),
   );
 });
 
@@ -41,6 +54,7 @@ final medicineSyncServiceProvider = Provider<MedicineSyncService>((ref) {
     database: ref.watch(appDatabaseProvider),
     syncQueueService: ref.watch(syncQueueServiceProvider),
     firestore: ref.watch(firebaseFirestoreProvider),
+    auth: ref.watch(firebaseAuthProvider),
   );
 });
 
@@ -49,6 +63,7 @@ final reminderSyncServiceProvider = Provider<ReminderSyncService>((ref) {
     database: ref.watch(appDatabaseProvider),
     syncQueueService: ref.watch(syncQueueServiceProvider),
     firestore: ref.watch(firebaseFirestoreProvider),
+    auth: ref.watch(firebaseAuthProvider),
   );
 });
 
@@ -57,6 +72,15 @@ final doseLogSyncServiceProvider = Provider<DoseLogSyncService>((ref) {
     database: ref.watch(appDatabaseProvider),
     syncQueueService: ref.watch(syncQueueServiceProvider),
     firestore: ref.watch(firebaseFirestoreProvider),
+    auth: ref.watch(firebaseAuthProvider),
+  );
+});
+
+final reportStorageServiceProvider = Provider<ReportStorageService>((ref) {
+  return ReportStorageService(
+    storage: ref.watch(firebaseStorageProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+    auth: ref.watch(firebaseAuthProvider),
   );
 });
 

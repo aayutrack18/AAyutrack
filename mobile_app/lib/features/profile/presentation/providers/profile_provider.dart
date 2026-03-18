@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,10 @@ import '../../domain/entities/patient_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'profile_state.dart';
 
+final profileFirebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
+
 final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
   final database = ref.watch(appDatabaseProvider);
   return ProfileLocalDataSource(database);
@@ -17,10 +22,12 @@ final profileLocalDataSourceProvider = Provider<ProfileLocalDataSource>((ref) {
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final localDataSource = ref.watch(profileLocalDataSourceProvider);
   final syncQueueService = ref.watch(syncQueueServiceProvider);
+  final auth = ref.watch(profileFirebaseAuthProvider);
 
   return ProfileRepositoryImpl(
     localDataSource: localDataSource,
     syncQueueService: syncQueueService,
+    auth: auth,
   );
 });
 

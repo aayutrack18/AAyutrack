@@ -26,7 +26,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   int _resendCount = 0;
   Timer? _timer;
   bool _submitting = false;
-  String? _localError; // shows error directly on screen
+  String? _localError;
 
   late final AnimationController _shakeController;
   late final Animation<double> _shakeAnimation;
@@ -39,7 +39,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _shakeAnimation = TweenSequence([
+
+    _shakeAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: -8.0), weight: 1),
       TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0), weight: 2),
       TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 2),
@@ -66,11 +67,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   void _startTimer() {
     _timer?.cancel();
     setState(() => _secondsLeft = AppStrings.resendSeconds);
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
+
       if (_secondsLeft == 0) {
         timer.cancel();
       } else {
@@ -81,10 +84,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
   Future<void> _verifyOtp(String otp) async {
     if (otp.length != AppStrings.otpLength || _submitting) return;
+
     setState(() {
       _submitting = true;
       _localError = null;
     });
+
     FocusScope.of(context).unfocus();
 
     final success = await ref
@@ -92,11 +97,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
         .verifyPhoneOtp(smsCode: otp);
 
     if (!mounted) return;
+
     setState(() => _submitting = false);
 
     if (success) {
       HapticFeedback.mediumImpact();
-      final authState = ref.read(authStateNotifierProvider);
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.profileGate,
@@ -107,7 +112,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
       _shakeController.forward(from: 0);
       _otpKey.currentState?.clear();
 
-      // Read the real error from state — show on screen, not just snackbar
       final error = ref.read(authStateNotifierProvider).errorMessage;
       setState(() {
         _localError = error ?? 'OTP verification failed. Please try again.';
@@ -116,7 +120,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   }
 
   Future<void> _resendCode() async {
-    if (_secondsLeft > 0) return;
+    if (_secondsLeft > 0 || _submitting) return;
+
     setState(() => _localError = null);
 
     final success = await ref
@@ -145,8 +150,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
         content: Text(msg),
         behavior: SnackBarBehavior.floating,
         backgroundColor: color,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -171,7 +175,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Back
             IconButton(
               onPressed: busy
                   ? null
@@ -181,24 +184,23 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                           .clearPhoneAuthSession();
                       Navigator.pop(context);
                     },
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.textPrimary),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary,
+              ),
               padding: EdgeInsets.zero,
               alignment: Alignment.centerLeft,
             ),
             const SizedBox(height: AppSpacing.md),
-
             AuthHeader(
               title: 'Verify your number',
               subtitle:
                   'We sent a ${AppStrings.otpLength}-digit code to\n${widget.phoneNumber}',
             ),
             const SizedBox(height: AppSpacing.xxl),
-
             GlassCard(
               child: Column(
                 children: [
-                  // Shake on wrong OTP
                   AnimatedBuilder(
                     animation: _shakeAnimation,
                     builder: (context, child) => Transform.translate(
@@ -211,8 +213,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                       onCompleted: _verifyOtp,
                     ),
                   ),
-
-                  // ── Inline error message ─────────────────────────────
                   if (_localError != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     Container(
@@ -226,8 +226,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.error_outline_rounded,
-                              size: 18, color: Colors.red.shade700),
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 18,
+                            color: Colors.red.shade700,
+                          ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
@@ -242,7 +245,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                       ),
                     ),
                   ],
-
                   const SizedBox(height: AppSpacing.xl),
                   PrimaryAuthButton(
                     label: busy ? 'Verifying…' : 'Verify & Continue',
@@ -252,8 +254,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                     onPressed: busy
                         ? null
                         : () {
-                            final otp =
-                                _otpKey.currentState?.value ?? '';
+                            final otp = _otpKey.currentState?.value ?? '';
                             if (otp.length < AppStrings.otpLength) {
                               setState(() {
                                 _localError =
@@ -268,15 +269,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // Resend / countdown
             Center(
               child: _secondsLeft > 0
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.timer_outlined,
-                            size: 16, color: AppColors.textMuted),
+                        const Icon(
+                          Icons.timer_outlined,
+                          size: 16,
+                          color: AppColors.textMuted,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Resend in ${_secondsLeft}s',
@@ -293,7 +295,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                       label: const Text('Resend code'),
                     ),
             ),
-
             Center(
               child: TextButton(
                 onPressed: busy
@@ -307,7 +308,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                 child: const Text('Change phone number'),
               ),
             ),
-
             if (_resendCount > 0)
               Center(
                 child: Text(

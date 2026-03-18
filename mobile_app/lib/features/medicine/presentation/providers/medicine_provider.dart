@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aayutrack/core/services/notification_service.dart';
@@ -6,6 +7,10 @@ import 'package:aayutrack/features/medicine/data/datasources/medicine_local_data
 import 'package:aayutrack/features/medicine/data/repositories/medicine_repository_impl.dart';
 import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
 import 'package:aayutrack/features/medicine/domain/repositories/medicine_repository.dart';
+
+final medicineFirebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService.instance;
@@ -24,12 +29,15 @@ final medicineRepositoryProvider = Provider<MedicineRepository>((ref) {
     localDataSource: ref.watch(medicineLocalDataSourceProvider),
     syncQueueService: ref.watch(syncQueueServiceProvider),
     notificationService: ref.watch(notificationServiceProvider),
+    auth: ref.watch(medicineFirebaseAuthProvider),
   );
 });
 
 final medicineProvider =
     StateNotifierProvider<MedicineNotifier, MedicineState>((ref) {
-  return MedicineNotifier(ref.watch(medicineRepositoryProvider));
+  return MedicineNotifier(
+    ref.watch(medicineRepositoryProvider),
+  );
 });
 
 class MedicineState {
@@ -43,10 +51,13 @@ class MedicineState {
     this.errorMessage,
   });
 
-  factory MedicineState.initial() => const MedicineState(
-        isLoading: false,
-        medicines: [],
-      );
+  factory MedicineState.initial() {
+    return const MedicineState(
+      isLoading: false,
+      medicines: [],
+      errorMessage: null,
+    );
+  }
 
   MedicineState copyWith({
     bool? isLoading,
@@ -62,10 +73,10 @@ class MedicineState {
   }
 
   List<Medicine> get activeMedicines =>
-      medicines.where((m) => m.isActive).toList();
+      medicines.where((m) => m.isActive && !m.isDeleted).toList();
 
   List<Medicine> get inactiveMedicines =>
-      medicines.where((m) => !m.isActive).toList();
+      medicines.where((m) => !m.isActive && !m.isDeleted).toList();
 
   bool get hasError => errorMessage != null;
 }
@@ -78,12 +89,24 @@ class MedicineNotifier extends StateNotifier<MedicineState> {
   }
 
   Future<void> loadMedicines() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+    );
+
     try {
       final medicines = await _repository.getMedicines();
-      state = state.copyWith(isLoading: false, medicines: medicines);
+
+      state = state.copyWith(
+        isLoading: false,
+        medicines: medicines.where((m) => !m.isDeleted).toList(),
+        clearError: true,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -92,7 +115,9 @@ class MedicineNotifier extends StateNotifier<MedicineState> {
       await _repository.saveMedicine(medicine);
       await loadMedicines();
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -101,7 +126,9 @@ class MedicineNotifier extends StateNotifier<MedicineState> {
       await _repository.updateMedicine(medicine);
       await loadMedicines();
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -110,16 +137,24 @@ class MedicineNotifier extends StateNotifier<MedicineState> {
       await _repository.deleteMedicine(id);
       await loadMedicines();
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  Future<void> toggleActive(String id, bool isActive) async {
+  Future<void> toggleMedicineActive(String id, bool isActive) async {
     try {
       await _repository.toggleMedicineActive(id, isActive);
       await loadMedicines();
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: e.toString(),
+      );
     }
+  }
+
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 }

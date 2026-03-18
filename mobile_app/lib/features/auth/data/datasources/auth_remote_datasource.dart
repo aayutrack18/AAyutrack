@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -37,9 +39,7 @@ class AuthRemoteDataSource {
     if (!kIsWeb) {
       try {
         await googleSignIn.signOut();
-      } catch (_) {
-        // Ignore: Google may not be the auth provider used.
-      }
+      } catch (_) {}
     }
   }
 
@@ -64,81 +64,115 @@ class AuthRemoteDataSource {
   }
 
   Future<void> sendPasswordResetEmail({required String email}) async {
-    await firebaseAuth.sendPasswordResetEmail(
-      email: email.trim(),
-    );
+    await firebaseAuth.sendPasswordResetEmail(email: email.trim());
   }
 
   Future<UserCredential> signInAnonymously() async {
     return firebaseAuth.signInAnonymously();
   }
 
+  String _normalizePhoneNumber(String phoneNumber) {
+    var normalized = phoneNumber.trim().replaceAll(RegExp(r'[\s\-\(\)]'), '');
+
+    if (normalized.startsWith('00')) {
+      normalized = '+${normalized.substring(2)}';
+    }
+
+    if (!normalized.startsWith('+')) {
+      throw FirebaseAuthException(
+        code: 'invalid-phone-number',
+        message: 'Phone number must include country code.',
+      );
+    }
+
+    if (!RegExp(r'^\+\d{8,15}$').hasMatch(normalized)) {
+      throw FirebaseAuthException(
+        code: 'invalid-phone-number',
+        message: 'Enter a valid phone number in international format.',
+      );
+    }
+
+    return normalized;
+  }
+
   Future<PhoneAuthSession> sendOtpToPhone({
     required String phoneNumber,
     int? forceResendingToken,
   }) async {
+    final normalizedPhoneNumber = _normalizePhoneNumber(phoneNumber);
+
     if (kIsWeb) {
       try {
         final confirmationResult =
-            await firebaseAuth.signInWithPhoneNumber(phoneNumber.trim());
+            await firebaseAuth.signInWithPhoneNumber(normalizedPhoneNumber);
         return PhoneAuthSession(confirmationResult: confirmationResult);
       } on FirebaseAuthException {
         rethrow;
       } catch (e) {
         throw FirebaseAuthException(
           code: 'web-otp-error',
-          message: 'Failed to send OTP on web. '
-              'Ensure Phone Auth is enabled in Firebase Console and '
-              'your domain is in Authorized Domains. '
-              'Detail: ${e.toString()}',
+          message: 'Failed to send OTP on web. Detail: ${e.toString()}',
         );
       }
     }
 
-    PhoneAuthSession? session;
-    FirebaseAuthException? failure;
+    final completer = Completer<PhoneAuthSession>();
+    bool completed = false;
+
+    void completeOnce(PhoneAuthSession session) {
+      if (!completed && !completer.isCompleted) {
+        completed = true;
+        completer.complete(session);
+      }
+    }
+
+    void failOnce(FirebaseAuthException error) {
+      if (!completed && !completer.isCompleted) {
+        completed = true;
+        completer.completeError(error);
+      }
+    }
 
     await firebaseAuth.verifyPhoneNumber(
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: normalizedPhoneNumber,
       forceResendingToken: forceResendingToken,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (PhoneAuthCredential credential) async {
         try {
           await firebaseAuth.signInWithCredential(credential);
+          completeOnce(const PhoneAuthSession());
         } on FirebaseAuthException catch (e) {
-          failure = e;
+          failOnce(e);
+        } catch (e) {
+          failOnce(
+            FirebaseAuthException(
+              code: 'auto-verification-failed',
+              message: e.toString(),
+            ),
+          );
         }
       },
       verificationFailed: (FirebaseAuthException e) {
-        failure = e;
+        failOnce(e);
       },
       codeSent: (String verificationId, int? resendToken) {
-        session = PhoneAuthSession(
-          verificationId: verificationId,
-          resendToken: resendToken,
+        completeOnce(
+          PhoneAuthSession(
+            verificationId: verificationId,
+            resendToken: resendToken,
+          ),
         );
       },
       codeAutoRetrievalTimeout: (String verificationId) {
-        session ??= PhoneAuthSession(verificationId: verificationId);
+        completeOnce(
+          PhoneAuthSession(
+            verificationId: verificationId,
+          ),
+        );
       },
     );
 
-    if (failure != null) {
-      throw failure!;
-    }
-
-    if (firebaseAuth.currentUser != null) {
-      return const PhoneAuthSession();
-    }
-
-    if (session == null) {
-      throw FirebaseAuthException(
-        code: 'code-not-sent',
-        message: 'OTP could not be sent. Please try again.',
-      );
-    }
-
-    return session!;
+    return completer.future;
   }
 
   Future<UserCredential> verifyPhoneOtp({
@@ -146,8 +180,24 @@ class AuthRemoteDataSource {
     String? verificationId,
     ConfirmationResult? confirmationResult,
   }) async {
+    final code = smsCode.trim();
+
+    if (code.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-verification-code',
+        message: 'Please enter the OTP code.',
+      );
+    }
+
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      throw FirebaseAuthException(
+        code: 'invalid-verification-code',
+        message: 'OTP must be 6 digits.',
+      );
+    }
+
     if (confirmationResult != null) {
-      return confirmationResult.confirm(smsCode.trim());
+      return confirmationResult.confirm(code);
     }
 
     if (verificationId == null || verificationId.isEmpty) {
@@ -159,7 +209,7 @@ class AuthRemoteDataSource {
 
     final credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
-      smsCode: smsCode.trim(),
+      smsCode: code,
     );
 
     return firebaseAuth.signInWithCredential(credential);
@@ -175,9 +225,7 @@ class AuthRemoteDataSource {
     try {
       try {
         await googleSignIn.disconnect();
-      } catch (_) {
-        // Ignore disconnect errors.
-      }
+      } catch (_) {}
 
       await googleSignIn.signOut();
 

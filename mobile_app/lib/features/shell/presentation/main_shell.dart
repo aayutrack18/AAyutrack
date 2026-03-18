@@ -32,7 +32,6 @@ class MainShell extends ConsumerWidget {
       MedicineListScreen(),
       ReminderListScreen(),
       HealthLogsDashboardScreen(),
-      PatientReportsScreen(),
       PatientProfileScreen(),
     ];
 
@@ -77,49 +76,41 @@ class _BottomNav extends StatelessWidget {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _NavItem(
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  isSelected: currentIndex == 0,
-                  onTap: () => onTap(0),
-                ),
-                _NavItem(
-                  icon: Icons.medication_rounded,
-                  label: 'Medicines',
-                  isSelected: currentIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                _NavItem(
-                  icon: Icons.alarm_rounded,
-                  label: 'Reminders',
-                  isSelected: currentIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-                _NavItem(
-                  icon: Icons.monitor_heart_rounded,
-                  label: 'Health',
-                  isSelected: currentIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-                _NavItem(
-                  icon: Icons.picture_as_pdf_rounded,
-                  label: 'Reports',
-                  isSelected: currentIndex == 4,
-                  onTap: () => onTap(4),
-                ),
-                _NavItem(
-                  icon: Icons.person_rounded,
-                  label: 'Profile',
-                  isSelected: currentIndex == 5,
-                  badgeCount: alertCount,
-                  onTap: () => onTap(5),
-                ),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                icon: Icons.home_rounded,
+                label: 'Home',
+                isSelected: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavItem(
+                icon: Icons.medication_rounded,
+                label: 'Medicines',
+                isSelected: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavItem(
+                icon: Icons.alarm_rounded,
+                label: 'Reminders',
+                isSelected: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _NavItem(
+                icon: Icons.monitor_heart_rounded,
+                label: 'Health',
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+              _NavItem(
+                icon: Icons.person_rounded,
+                label: 'Profile',
+                isSelected: currentIndex == 4,
+                badgeCount: alertCount,
+                onTap: () => onTap(4),
+              ),
+            ],
           ),
         ),
       ),

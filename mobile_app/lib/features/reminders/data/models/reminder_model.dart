@@ -8,7 +8,7 @@ import 'package:aayutrack/features/reminders/domain/entities/reminder.dart'
 class ReminderModel extends domain.Reminder {
   const ReminderModel({
     required String id,
-    String patientId = 'default_patient',
+    required String patientId,
     required String title,
     required String description,
     required String time,
@@ -76,6 +76,28 @@ class ReminderModel extends domain.Reminder {
     );
   }
 
+  factory ReminderModel.fromJson(Map<String, dynamic> json) {
+    return ReminderModel(
+      id: json['id'] as String? ?? '',
+      patientId: json['patientId'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      time: json['time'] as String? ?? '00:00',
+      repeatDays: (json['repeatDays'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+      isEnabled: json['isEnabled'] as bool? ?? true,
+      type: json['type'] as String? ?? '',
+      linkedMedicineId: json['linkedMedicineId'] as String?,
+      isSynced: json['isSynced'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+          DateTime.now(),
+    );
+  }
+
   db.RemindersCompanion toCompanion() {
     final parsedTime = _parseTime(time);
 
@@ -98,7 +120,7 @@ class ReminderModel extends domain.Reminder {
     );
   }
 
-  Map<String, dynamic> toSyncPayload() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'patientId': patientId,
@@ -114,6 +136,10 @@ class ReminderModel extends domain.Reminder {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+  }
+
+  Map<String, dynamic> toSyncPayload() {
+    return toJson();
   }
 
   ReminderModel copyWithModel({

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../database/app_database.dart';
 import '../../features/medicine/data/models/medicine_model.dart';
@@ -10,6 +11,7 @@ class MedicineSyncService {
   final AppDatabase database;
   final SyncQueueService syncQueueService;
   final FirebaseFirestore firestore;
+  final FirebaseAuth auth;
 
   bool _isSyncing = false;
 
@@ -17,7 +19,16 @@ class MedicineSyncService {
     required this.database,
     required this.syncQueueService,
     required this.firestore,
+    required this.auth,
   });
+
+  String get _uid {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+    return uid;
+  }
 
   Future<void> enqueueUnsyncedMedicines() async {
     final unsyncedMedicines = await database.medicinesDao.getUnsyncedMedicines();
@@ -32,9 +43,11 @@ class MedicineSyncService {
         payload: model.isDeleted
             ? {
                 'id': model.id,
-                'patientId': model.patientId,
               }
-            : model.toSyncPayload(),
+            : {
+                ...model.toSyncPayload(),
+                'patientId': _uid,
+              },
       );
     }
   }
@@ -49,13 +62,37 @@ class MedicineSyncService {
         entityType: 'medicine',
         processor: (item) async {
           final payload = jsonDecode(item.payload) as Map<String, dynamic>;
-          final docRef = firestore.collection('medicines').doc(item.entityId);
+          final operation = item.operation;
 
-          switch (item.operation) {
+          final medicineId =
+              (payload['id'] as String?)?.trim().isNotEmpty == true
+                  ? (payload['id'] as String).trim()
+                  : item.entityId;
+
+          if (medicineId.isEmpty && operation != 'delete') {
+            throw Exception('Medicine sync failed: missing medicine id');
+          }
+
+          final docRef = firestore
+              .collection('users')
+              .doc(_uid)
+              .collection('medicines')
+              .doc(medicineId);
+
+          switch (operation) {
             case 'upsert':
-              await docRef.set(payload, SetOptions(merge: true));
+              await docRef.set(
+                {
+                  ...payload,
+                  'id': medicineId,
+                  'patientId': _uid,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+
               await database.medicinesDao.updateMedicineSyncStatus(
-                id: item.entityId,
+                id: medicineId,
                 isSynced: true,
               );
               break;
@@ -66,7 +103,7 @@ class MedicineSyncService {
 
             default:
               throw UnsupportedError(
-                'Unsupported medicine sync operation: ${item.operation}',
+                'Unsupported medicine sync operation: $operation',
               );
           }
         },

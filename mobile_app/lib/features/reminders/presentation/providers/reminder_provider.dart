@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aayutrack/core/services/notification_service.dart';
@@ -6,6 +7,10 @@ import 'package:aayutrack/features/reminders/data/datasources/reminder_local_dat
 import 'package:aayutrack/features/reminders/data/repositories/reminder_repository_impl.dart';
 import 'package:aayutrack/features/reminders/domain/entities/reminder.dart';
 import 'package:aayutrack/features/reminders/domain/repositories/reminder_repository.dart';
+
+final reminderFirebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
 
 final reminderNotificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService.instance;
@@ -24,6 +29,7 @@ final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
     localDataSource: ref.watch(reminderLocalDataSourceProvider),
     syncQueueService: ref.watch(syncQueueServiceProvider),
     notificationService: ref.watch(reminderNotificationServiceProvider),
+    auth: ref.watch(reminderFirebaseAuthProvider),
   );
 });
 

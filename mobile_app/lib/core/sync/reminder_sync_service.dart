@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../database/app_database.dart';
 import '../../features/reminders/data/models/reminder_model.dart';
@@ -10,6 +11,7 @@ class ReminderSyncService {
   final AppDatabase database;
   final SyncQueueService syncQueueService;
   final FirebaseFirestore firestore;
+  final FirebaseAuth auth;
 
   bool _isSyncing = false;
 
@@ -17,7 +19,16 @@ class ReminderSyncService {
     required this.database,
     required this.syncQueueService,
     required this.firestore,
+    required this.auth,
   });
+
+  String get _uid {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+    return uid;
+  }
 
   Future<void> enqueueUnsyncedReminders() async {
     final unsyncedReminders = await database.remindersDao.getUnsyncedReminders();
@@ -32,9 +43,11 @@ class ReminderSyncService {
         payload: model.isDeleted
             ? {
                 'id': model.id,
-                'patientId': model.patientId,
               }
-            : model.toSyncPayload(),
+            : {
+                ...model.toSyncPayload(),
+                'patientId': _uid,
+              },
       );
     }
   }
@@ -49,13 +62,37 @@ class ReminderSyncService {
         entityType: 'reminder',
         processor: (item) async {
           final payload = jsonDecode(item.payload) as Map<String, dynamic>;
-          final docRef = firestore.collection('reminders').doc(item.entityId);
+          final operation = item.operation;
 
-          switch (item.operation) {
+          final reminderId =
+              (payload['id'] as String?)?.trim().isNotEmpty == true
+                  ? (payload['id'] as String).trim()
+                  : item.entityId;
+
+          if (reminderId.isEmpty && operation != 'delete') {
+            throw Exception('Reminder sync failed: missing reminder id');
+          }
+
+          final docRef = firestore
+              .collection('users')
+              .doc(_uid)
+              .collection('reminders')
+              .doc(reminderId);
+
+          switch (operation) {
             case 'upsert':
-              await docRef.set(payload, SetOptions(merge: true));
+              await docRef.set(
+                {
+                  ...payload,
+                  'id': reminderId,
+                  'patientId': _uid,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+
               await database.remindersDao.updateReminderSyncStatus(
-                id: item.entityId,
+                id: reminderId,
                 isSynced: true,
               );
               break;
@@ -66,7 +103,7 @@ class ReminderSyncService {
 
             default:
               throw UnsupportedError(
-                'Unsupported reminder sync operation: ${item.operation}',
+                'Unsupported reminder sync operation: $operation',
               );
           }
         },

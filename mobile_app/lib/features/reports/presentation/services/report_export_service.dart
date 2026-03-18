@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -20,12 +19,14 @@ class ReportExportResult {
   final String title;
   final String dateRange;
   final int pageCount;
+  final String templateId;
 
   const ReportExportResult({
     required this.file,
     required this.title,
     required this.dateRange,
     required this.pageCount,
+    required this.templateId,
   });
 }
 
@@ -98,7 +99,10 @@ class ReportExportService {
     }
   }
 
-  static String _safeValue(String value, {String fallback = 'Not available'}) {
+  static String _safeValue(
+    String value, {
+    String fallback = 'Not available',
+  }) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? fallback : trimmed;
   }
@@ -125,6 +129,7 @@ class ReportExportService {
     final patientName = profile?.fullName.trim().isNotEmpty == true
         ? profile!.fullName
         : 'Patient';
+
     final bmi = (profile?.heightCm != null &&
             profile?.weightKg != null &&
             profile!.heightCm! > 0)
@@ -243,7 +248,10 @@ class ReportExportService {
                   ),
                   pw.SizedBox(height: 6),
                   pw.Text(
-                    'Doctor: ${_safeValue(reportsState.pdfDesign.doctorName, fallback: 'Doctor')}',
+                    "Doctor: ${_safeValue(
+                      reportsState.pdfDesign.doctorName,
+                      fallback: 'Doctor',
+                    )}",
                   ),
                   pw.Text('Patient: $patientName'),
                   pw.SizedBox(height: 6),
@@ -269,7 +277,10 @@ class ReportExportService {
           ),
           pw.SizedBox(height: 8),
           pw.Table(
-            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.6),
+            border: pw.TableBorder.all(
+              color: PdfColors.grey300,
+              width: 0.6,
+            ),
             children: [
               _row('Full Name', _safeValue(profile?.fullName ?? '')),
               _row('Age', profile != null ? '${profile.age} yrs' : 'N/A'),
@@ -294,7 +305,10 @@ class ReportExportService {
                 '${_safeValue(profile?.emergencyContactName ?? '')} / '
                     '${_safeValue(profile?.emergencyContactPhone ?? '')}',
               ),
-              _row('Sync Status', profile?.isSynced == true ? 'Synced' : 'Pending sync'),
+              _row(
+                'Sync Status',
+                profile?.isSynced == true ? 'Synced' : 'Pending sync',
+              ),
             ],
           ),
           pw.SizedBox(height: 18),
@@ -307,9 +321,15 @@ class ReportExportService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Overall Compliance: ${compliance.overallScore.toInt()}%'),
-                  pw.Text('Medicine Adherence: ${compliance.medicineAdherence.toInt()}%'),
-                  pw.Text('Health Log Adherence: ${compliance.logAdherence.toInt()}%'),
+                  pw.Text(
+                    'Overall Compliance: ${compliance.overallScore.toInt()}%',
+                  ),
+                  pw.Text(
+                    'Medicine Adherence: ${compliance.medicineAdherence.toInt()}%',
+                  ),
+                  pw.Text(
+                    'Health Log Adherence: ${compliance.logAdherence.toInt()}%',
+                  ),
                   pw.Text('Compliance Label: ${compliance.scoreLabel}'),
                   pw.Text('Active Alerts: ${compliance.unreadAlertCount}'),
                 ],
@@ -365,6 +385,7 @@ class ReportExportService {
                 children: MetricType.values.map((type) {
                   final log = healthLogs.latestByMetric[type];
                   if (log == null) return pw.SizedBox.shrink();
+
                   return pw.Container(
                     width: double.infinity,
                     margin: const pw.EdgeInsets.only(bottom: 8),
@@ -464,12 +485,18 @@ class ReportExportService {
           padding: const pw.EdgeInsets.all(8),
           child: pw.Text(
             left,
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 10,
+            ),
           ),
         ),
         pw.Padding(
           padding: const pw.EdgeInsets.all(8),
-          child: pw.Text(right, style: const pw.TextStyle(fontSize: 10)),
+          child: pw.Text(
+            right,
+            style: const pw.TextStyle(fontSize: 10),
+          ),
         ),
       ],
     );
@@ -491,7 +518,10 @@ class ReportExportService {
 
   static pw.BoxDecoration _boxDecoration() {
     return pw.BoxDecoration(
-      border: pw.Border.all(color: PdfColors.grey300, width: 0.7),
+      border: pw.Border.all(
+        color: PdfColors.grey300,
+        width: 0.7,
+      ),
       borderRadius: pw.BorderRadius.circular(8),
     );
   }
@@ -531,10 +561,12 @@ class ReportExportService {
 
     return ReportExportResult(
       file: file,
-      title: '${_templateName(reportsState.selectedTemplateId)} – ${_months[now.month - 1]} ${now.year}',
+      title:
+          '${_templateName(reportsState.selectedTemplateId)} – ${_months[now.month - 1]} ${now.year}',
       dateRange: _dateRange(reportsState),
       pageCount: reportsState.enabledSections.length +
           (reportsState.pdfDesign.includeDoctorSummary ? 1 : 0),
+      templateId: reportsState.selectedTemplateId,
     );
   }
 

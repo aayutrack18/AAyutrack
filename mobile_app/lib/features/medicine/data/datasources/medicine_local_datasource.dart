@@ -9,7 +9,7 @@ class MedicineLocalDataSource {
   });
 
   Future<List<MedicineModel>> getMedicines({
-    String patientId = 'default_patient',
+    required String patientId,
   }) async {
     final rows = await medicinesDao.getMedicinesByPatientId(patientId);
     return rows.map(MedicineModel.fromDb).toList();
@@ -31,19 +31,6 @@ class MedicineLocalDataSource {
 
   Future<void> deleteMedicine(String id) async {
     await medicinesDao.softDeleteMedicine(id);
-  }
-
-  Future<void> toggleMedicineActive(String id, bool isActive) async {
-    final existing = await getMedicineById(id);
-    if (existing == null) return;
-
-    final updated = existing.copyWithModel(
-      isActive: isActive,
-      isSynced: false,
-      updatedAt: DateTime.now(),
-    );
-
-    await medicinesDao.upsertMedicine(updated.toCompanion());
   }
 
   Future<void> markMedicineAsSynced(String id) async {

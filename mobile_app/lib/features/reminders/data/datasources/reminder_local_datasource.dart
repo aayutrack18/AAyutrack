@@ -9,7 +9,7 @@ class ReminderLocalDataSource {
   });
 
   Future<List<ReminderModel>> getReminders({
-    String patientId = 'default_patient',
+    required String patientId,
   }) async {
     final rows = await remindersDao.getRemindersByPatientId(patientId);
     return rows.map(ReminderModel.fromDb).toList();

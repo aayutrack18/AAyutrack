@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:aayutrack/core/services/notification_service.dart';
 import 'package:aayutrack/core/sync/sync_queue_service.dart';
 import 'package:aayutrack/features/medicine/data/datasources/medicine_local_datasource.dart';
@@ -9,23 +11,36 @@ class MedicineRepositoryImpl implements MedicineRepository {
   final MedicineLocalDataSource localDataSource;
   final SyncQueueService syncQueueService;
   final NotificationService notificationService;
+  final FirebaseAuth auth;
 
   const MedicineRepositoryImpl({
     required this.localDataSource,
     required this.syncQueueService,
     required this.notificationService,
+    required this.auth,
   });
+
+  String get _uid {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+    return uid;
+  }
 
   @override
   Future<List<Medicine>> getMedicines() async {
-    final medicines = await localDataSource.getMedicines();
-    return medicines;
+    final medicines = await localDataSource.getMedicines(
+      patientId: _uid, // 🔥 FIX
+    );
+    return medicines.where((m) => !m.isDeleted).toList();
   }
 
   @override
   Future<void> saveMedicine(Medicine medicine) async {
     final model = MedicineModel.fromEntity(
       medicine.copyWith(
+        patientId: _uid, // 🔥 FIX
         isSynced: false,
         isDeleted: false,
         updatedAt: DateTime.now(),
@@ -49,6 +64,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
   Future<void> updateMedicine(Medicine medicine) async {
     final model = MedicineModel.fromEntity(
       medicine.copyWith(
+        patientId: _uid, // 🔥 FIX
         isSynced: false,
         isDeleted: false,
         updatedAt: DateTime.now(),
@@ -94,8 +110,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     if (existing == null) return;
 
     final updated = existing.copyWithModel(
+      patientId: _uid, // 🔥 FIX
       isActive: isActive,
-      isDeleted: false,
       isSynced: false,
       updatedAt: DateTime.now(),
     );

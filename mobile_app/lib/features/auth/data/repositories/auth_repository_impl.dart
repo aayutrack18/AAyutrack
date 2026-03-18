@@ -198,6 +198,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final existing =
         await firestoreUserDataSource.getUserProfile(firebaseUser.uid);
+
     if (existing != null) {
       final merged = existing.copyWith(
         name: existing.name ?? firebaseUser.displayName,
@@ -217,6 +218,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   AppUser _mapFirebaseUserToAppUser(User firebaseUser) {
     final now = DateTime.now();
+
     return AppUser(
       uid: firebaseUser.uid,
       name: firebaseUser.displayName,

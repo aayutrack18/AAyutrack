@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:aayutrack/core/sync/sync_queue_service.dart';
 import 'package:aayutrack/features/profile/data/datasources/profile_local_datasource.dart';
 import 'package:aayutrack/features/profile/data/models/patient_profile_model.dart';
@@ -7,27 +9,58 @@ import 'package:aayutrack/features/profile/domain/repositories/profile_repositor
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileLocalDataSource localDataSource;
   final SyncQueueService syncQueueService;
+  final FirebaseAuth auth;
 
   const ProfileRepositoryImpl({
     required this.localDataSource,
     required this.syncQueueService,
+    required this.auth,
   });
+
+  String get _uid {
+    final uid = auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+    return uid;
+  }
 
   @override
   Future<PatientProfile?> getProfile() async {
-    final model = await localDataSource.getProfile();
-    return _toEntity(model);
+    return await localDataSource.getProfile();
   }
 
   @override
   Future<void> saveProfile(PatientProfile profile) async {
-    final model = _toModel(profile);
+    final now = DateTime.now();
+
+    final baseModel = _toModel(profile);
+    final model = PatientProfileModel(
+      profileId: baseModel.profileId,
+      userId: _uid,
+      fullName: baseModel.fullName,
+      age: baseModel.age,
+      gender: baseModel.gender,
+      phoneNumber: baseModel.phoneNumber,
+      email: baseModel.email,
+      bloodGroup: baseModel.bloodGroup,
+      heightCm: baseModel.heightCm,
+      weightKg: baseModel.weightKg,
+      address: baseModel.address,
+      allergies: baseModel.allergies,
+      medicalConditions: baseModel.medicalConditions,
+      emergencyContactName: baseModel.emergencyContactName,
+      emergencyContactPhone: baseModel.emergencyContactPhone,
+      createdAt: baseModel.createdAt,
+      updatedAt: now,
+      isSynced: false,
+    );
 
     await localDataSource.saveProfile(model);
     await localDataSource.markProfileAsPendingSync();
 
     await syncQueueService.enqueue(
-      entityType: 'patient_profile',
+      entityType: 'profile',
       entityId: model.profileId,
       operation: 'upsert',
       payload: _profilePayload(model),
@@ -36,13 +69,35 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> updateProfile(PatientProfile profile) async {
-    final model = _toModel(profile);
+    final now = DateTime.now();
+
+    final baseModel = _toModel(profile);
+    final model = PatientProfileModel(
+      profileId: baseModel.profileId,
+      userId: _uid,
+      fullName: baseModel.fullName,
+      age: baseModel.age,
+      gender: baseModel.gender,
+      phoneNumber: baseModel.phoneNumber,
+      email: baseModel.email,
+      bloodGroup: baseModel.bloodGroup,
+      heightCm: baseModel.heightCm,
+      weightKg: baseModel.weightKg,
+      address: baseModel.address,
+      allergies: baseModel.allergies,
+      medicalConditions: baseModel.medicalConditions,
+      emergencyContactName: baseModel.emergencyContactName,
+      emergencyContactPhone: baseModel.emergencyContactPhone,
+      createdAt: baseModel.createdAt,
+      updatedAt: now,
+      isSynced: false,
+    );
 
     await localDataSource.updateProfile(model);
     await localDataSource.markProfileAsPendingSync();
 
     await syncQueueService.enqueue(
-      entityType: 'patient_profile',
+      entityType: 'profile',
       entityId: model.profileId,
       operation: 'upsert',
       payload: _profilePayload(model),
@@ -52,18 +107,17 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> deleteProfile() async {
     final existingProfile = await localDataSource.getProfile();
-
     if (existingProfile == null) return;
 
     await localDataSource.deleteProfile();
 
     await syncQueueService.enqueue(
-      entityType: 'patient_profile',
+      entityType: 'profile',
       entityId: existingProfile.profileId,
       operation: 'delete',
       payload: {
         'profileId': existingProfile.profileId,
-        'userId': existingProfile.userId,
+        'userId': _uid,
       },
     );
   }
@@ -76,11 +130,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> markProfileAsPendingSync() async {
     await localDataSource.markProfileAsPendingSync();
-  }
-
-  PatientProfile? _toEntity(PatientProfileModel? model) {
-    if (model == null) return null;
-    return model;
   }
 
   PatientProfileModel _toModel(PatientProfile profile) {

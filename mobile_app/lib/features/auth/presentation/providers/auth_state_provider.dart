@@ -70,6 +70,7 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
   Future<void> checkCurrentSession() async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       final uid = await repository.getCurrentUserId();
@@ -85,10 +86,16 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
       }
 
       final userProfile = await repository.getUserProfile(uid);
+
       state = state.copyWith(
         isLoading: false,
         uid: uid,
         appUser: userProfile,
+      );
+    } on FirebaseAuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _mapFirebaseError(e),
       );
     } catch (e) {
       state = state.copyWith(
@@ -103,12 +110,14 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
     required String password,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       final user = await repository.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       state = state.copyWith(
         isLoading: false,
         uid: user.uid,
@@ -137,6 +146,7 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
     required String password,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       final user = await repository.createAccountWithEmailAndPassword(
@@ -144,6 +154,7 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
         email: email,
         password: password,
       );
+
       state = state.copyWith(
         isLoading: false,
         uid: user.uid,
@@ -167,10 +178,15 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
   }
 
   Future<bool> sendPhoneOtp({required String phoneNumber}) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+      otpSent: false,
+    );
 
     try {
       final repository = ref.read(authRepositoryProvider);
+
       final session = await repository.sendOtpToPhone(
         phoneNumber: phoneNumber,
         forceResendingToken: state.phoneResendToken,
@@ -200,12 +216,14 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
     } on FirebaseAuthException catch (e) {
       state = state.copyWith(
         isLoading: false,
+        otpSent: false,
         errorMessage: _mapFirebaseError(e),
       );
       return false;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
+        otpSent: false,
         errorMessage: e.toString(),
       );
       return false;
@@ -217,6 +235,7 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
     try {
       final repository = ref.read(authRepositoryProvider);
+
       final user = await repository.verifyPhoneOtp(
         smsCode: smsCode,
         verificationId: state.phoneVerificationId,
@@ -247,9 +266,11 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
   Future<bool> sendResetPasswordEmail({required String email}) async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       await repository.sendPasswordResetEmail(email: email);
+
       state = state.copyWith(isLoading: false);
       return true;
     } on FirebaseAuthException catch (e) {
@@ -269,9 +290,11 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
   Future<bool> signInGuest() async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       final user = await repository.signInAnonymously();
+
       state = state.copyWith(
         isLoading: false,
         uid: user.uid,
@@ -296,9 +319,11 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       final user = await repository.signInWithGoogle();
+
       state = state.copyWith(
         isLoading: false,
         uid: user.uid,
@@ -323,10 +348,16 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
 
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       final repository = ref.read(authRepositoryProvider);
       await repository.signOut();
       state = const AuthViewState();
+    } on FirebaseAuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _mapFirebaseError(e),
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -364,6 +395,8 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
         return 'Popup was blocked. Please allow popups and try again.';
       case 'google-idtoken-null':
         return 'Google sign-in configuration error. Contact support.';
+      case 'google-sign-in-failed':
+        return e.message ?? 'Google sign-in failed. Please try again.';
       case 'invalid-phone-number':
         return 'Enter a valid phone number with country code.';
       case 'quota-exceeded':
@@ -380,6 +413,10 @@ class AuthStateNotifier extends StateNotifier<AuthViewState> {
         return 'Too many attempts. Please wait and try again.';
       case 'code-not-sent':
         return 'OTP could not be sent. Please try again.';
+      case 'captcha-check-failed':
+        return 'Phone verification failed. Please try again.';
+      case 'app-not-authorized':
+        return 'This app is not authorized for Firebase Authentication.';
       default:
         return e.message ?? 'Authentication failed. Please try again.';
     }
