@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:aayutrack/features/medicine/domain/entities/medicine.dart';
@@ -19,15 +20,15 @@ class NotificationService {
 
   bool _initialized = false;
 
-  static const String _medicineChannelId = 'medicine_reminders';
-  static const String _medicineChannelName = 'Medicine Reminders';
+  static const String _medicineChannelId = 'medicine_alarm_channel';
+  static const String _medicineChannelName = 'Medicine Alarm Reminders';
   static const String _medicineChannelDescription =
-      'Dose reminders for scheduled medicines';
+      'Exact alarm-style reminders for scheduled medicines';
 
-  static const String _reminderChannelId = 'general_reminders';
-  static const String _reminderChannelName = 'General Reminders';
+  static const String _reminderChannelId = 'general_alarm_channel';
+  static const String _reminderChannelName = 'General Alarm Reminders';
   static const String _reminderChannelDescription =
-      'Appointment, custom, measurement and other reminders';
+      'Exact high-priority reminders for appointments and custom alerts';
 
   Future<void> ensureInitialized() async {
     if (_initialized) return;
@@ -53,6 +54,9 @@ class NotificationService {
       _medicineChannelName,
       description: _medicineChannelDescription,
       importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
     );
 
     const reminderChannel = AndroidNotificationChannel(
@@ -60,6 +64,9 @@ class NotificationService {
       _reminderChannelName,
       description: _reminderChannelDescription,
       importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
     );
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
@@ -83,6 +90,10 @@ class NotificationService {
     if (androidPlugin != null) {
       androidGranted =
           await androidPlugin.requestNotificationsPermission() ?? false;
+
+      try {
+        await androidPlugin.requestExactAlarmsPermission();
+      } catch (_) {}
     }
 
     final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
@@ -109,6 +120,58 @@ class NotificationService {
     }
 
     return androidGranted && iosGranted;
+  }
+
+  Future<void> showInstantMedicineAlarm({
+    required String medicineId,
+    required String medicineName,
+    required String dosage,
+    required String time,
+  }) async {
+    await ensureInitialized();
+
+    final notificationId = _medicineNotificationId(medicineId, time);
+
+    await _plugin.show(
+      notificationId,
+      'Time to take $medicineName',
+      dosage.trim().isNotEmpty ? '$dosage • Scheduled at $time' : 'Scheduled at $time',
+      _medicineAlarmDetails(),
+      payload: jsonEncode({
+        'type': 'medicine_reminder',
+        'medicineId': medicineId,
+        'medicineName': medicineName,
+        'dosage': dosage,
+        'time': time,
+      }),
+    );
+  }
+
+  Future<void> showInstantReminderAlarm({
+    required String reminderId,
+    required String title,
+    required String description,
+    required String time,
+    required String reminderType,
+  }) async {
+    await ensureInitialized();
+
+    final notificationId = _reminderNotificationId(reminderId);
+
+    await _plugin.show(
+      notificationId,
+      title,
+      description.trim().isNotEmpty ? description : 'Scheduled at $time',
+      _generalAlarmDetails(),
+      payload: jsonEncode({
+        'type': 'general_reminder',
+        'reminderId': reminderId,
+        'title': title,
+        'description': description,
+        'time': time,
+        'reminderType': reminderType,
+      }),
+    );
   }
 
   Future<void> scheduleMedicineReminders(Medicine medicine) async {
@@ -138,19 +201,6 @@ class NotificationService {
 
       final notificationId = _medicineNotificationId(medicine.id, time);
 
-      final details = NotificationDetails(
-        android: AndroidNotificationDetails(
-          _medicineChannelId,
-          _medicineChannelName,
-          channelDescription: _medicineChannelDescription,
-          importance: Importance.max,
-          priority: Priority.high,
-          ticker: 'ticker',
-        ),
-        iOS: const DarwinNotificationDetails(),
-        macOS: const DarwinNotificationDetails(),
-      );
-
       final payload = jsonEncode({
         'type': 'medicine_reminder',
         'medicineId': medicine.id,
@@ -166,7 +216,7 @@ class NotificationService {
             ? '${medicine.dosage} • Scheduled at $time'
             : 'Scheduled at $time',
         _nextInstanceOfTime(parsed.$1, parsed.$2),
-        details,
+        _medicineAlarmDetails(),
         androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -192,9 +242,7 @@ class NotificationService {
             decoded['medicineId'] == medicineId) {
           await _plugin.cancel(request.id);
         }
-      } catch (_) {
-        // ignore malformed payload
-      }
+      } catch (_) {}
     }
   }
 
@@ -219,20 +267,6 @@ class NotificationService {
     if (parsed == null) return;
 
     final scheduleMode = await _resolveAndroidScheduleMode();
-    final notificationId = _reminderNotificationId(reminder.id);
-
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        _reminderChannelId,
-        _reminderChannelName,
-        channelDescription: _reminderChannelDescription,
-        importance: Importance.max,
-        priority: Priority.high,
-        ticker: 'ticker',
-      ),
-      iOS: const DarwinNotificationDetails(),
-      macOS: const DarwinNotificationDetails(),
-    );
 
     final body = reminder.description.trim().isNotEmpty
         ? reminder.description.trim()
@@ -251,11 +285,11 @@ class NotificationService {
 
     if (reminder.repeatDays.length == 7) {
       await _plugin.zonedSchedule(
-        notificationId,
+        _reminderNotificationId(reminder.id),
         reminder.title,
         body,
         _nextInstanceOfTime(parsed.$1, parsed.$2),
-        details,
+        _generalAlarmDetails(),
         androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -267,11 +301,11 @@ class NotificationService {
 
     if (reminder.repeatDays.isEmpty) {
       await _plugin.zonedSchedule(
-        notificationId,
+        _reminderNotificationId(reminder.id),
         reminder.title,
         body,
         _nextInstanceOfTime(parsed.$1, parsed.$2),
-        details,
+        _generalAlarmDetails(),
         androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -291,7 +325,7 @@ class NotificationService {
         reminder.title,
         body,
         _nextInstanceOfWeekdayTime(weekday, parsed.$1, parsed.$2),
-        details,
+        _generalAlarmDetails(),
         androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -317,15 +351,75 @@ class NotificationService {
             decoded['reminderId'] == reminderId) {
           await _plugin.cancel(request.id);
         }
-      } catch (_) {
-        // ignore malformed payload
-      }
+      } catch (_) {}
     }
   }
 
-  Future<void> cancelAllMedicineReminders() async {
+  Future<void> cancelAllScheduledReminders() async {
     await ensureInitialized();
     await _plugin.cancelAll();
+  }
+
+  NotificationDetails _medicineAlarmDetails() {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        _medicineChannelId,
+        _medicineChannelName,
+        channelDescription: _medicineChannelDescription,
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
+        autoCancel: false,
+        ongoing: true,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+        ticker: 'Medicine Alarm',
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+      macOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+  }
+
+  NotificationDetails _generalAlarmDetails() {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        _reminderChannelId,
+        _reminderChannelName,
+        channelDescription: _reminderChannelDescription,
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
+        autoCancel: false,
+        ongoing: true,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
+        ticker: 'Reminder Alarm',
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+      macOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
   }
 
   Future<AndroidScheduleMode> _resolveAndroidScheduleMode() async {
@@ -344,16 +438,13 @@ class NotificationService {
         return AndroidScheduleMode.exactAllowWhileIdle;
       }
 
-      final requested =
-          await androidPlugin.requestExactAlarmsPermission() ?? false;
+      await androidPlugin.requestExactAlarmsPermission();
 
-      if (requested) {
-        final canScheduleAfterRequest =
-            await androidPlugin.canScheduleExactNotifications() ?? false;
+      final canScheduleAfterRequest =
+          await androidPlugin.canScheduleExactNotifications() ?? false;
 
-        if (canScheduleAfterRequest) {
-          return AndroidScheduleMode.exactAllowWhileIdle;
-        }
+      if (canScheduleAfterRequest) {
+        return AndroidScheduleMode.exactAllowWhileIdle;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -364,40 +455,34 @@ class NotificationService {
     return AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
-  Future<void> _configureLocalTimezone() async {
-    try {
-      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      final location = tz.getLocation(timezoneInfo.identifier);
-      tz.setLocalLocation(location);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Failed to configure timezone: $e');
-      }
-      tz.setLocalLocation(tz.getLocation('UTC'));
+ Future<void> _configureLocalTimezone() async {
+  try {
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    final location = tz.getLocation(timezoneInfo.identifier);
+    tz.setLocalLocation(location);
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('Failed to configure timezone: $e');
     }
+    tz.setLocalLocation(tz.getLocation('UTC'));
   }
+}
 
   (int, int)? _parseTime(String raw) {
     final normalized = raw.trim();
 
-    if (normalized.contains(':')) {
-      final parts = normalized.split(':');
-      if (parts.length == 2) {
-        final hour = int.tryParse(parts[0]);
-        final minute = int.tryParse(parts[1]);
+    if (!normalized.contains(':')) return null;
 
-        if (hour != null &&
-            minute != null &&
-            hour >= 0 &&
-            hour <= 23 &&
-            minute >= 0 &&
-            minute <= 59) {
-          return (hour, minute);
-        }
-      }
-    }
+    final parts = normalized.split(':');
+    if (parts.length != 2) return null;
 
-    return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return (hour, minute);
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
@@ -411,7 +496,7 @@ class NotificationService {
       minute,
     );
 
-    if (scheduled.isBefore(now) || scheduled.isAtSameMomentAs(now)) {
+    if (!scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
@@ -427,6 +512,14 @@ class NotificationService {
 
     while (scheduled.weekday != weekday) {
       scheduled = scheduled.add(const Duration(days: 1));
+      scheduled = tz.TZDateTime(
+        tz.local,
+        scheduled.year,
+        scheduled.month,
+        scheduled.day,
+        hour,
+        minute,
+      );
     }
 
     return scheduled;

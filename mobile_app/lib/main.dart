@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/services/fcm_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/sync/sync_providers.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,9 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(
     firebaseMessagingBackgroundHandler,
   );
+
+  await NotificationService.instance.ensureInitialized();
+  await NotificationService.instance.requestPermissions();
 
   await FcmService.instance.initialize();
 
