@@ -53,6 +53,7 @@ class MedicineListScreen extends ConsumerWidget {
                   : _buildContent(context, ref, state),
       floatingActionButton: state.medicines.isNotEmpty
           ? FloatingActionButton(
+              heroTag: 'medicine_list_fab',
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddMedicineScreen()),

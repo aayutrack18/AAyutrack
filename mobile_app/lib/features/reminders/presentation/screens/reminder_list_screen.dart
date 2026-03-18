@@ -87,6 +87,7 @@ class ReminderListScreen extends ConsumerWidget {
                   : _buildList(context, ref, state),
       floatingActionButton: state.reminders.isNotEmpty
           ? FloatingActionButton(
+              heroTag: 'reminder_list_fab',
               onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(

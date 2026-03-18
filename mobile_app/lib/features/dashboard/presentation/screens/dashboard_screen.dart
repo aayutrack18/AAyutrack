@@ -4,6 +4,8 @@ import 'package:aayutrack/core/constants/app_constants.dart';
 import 'package:aayutrack/core/intelligence/compliance_score_service.dart';
 import 'package:aayutrack/core/intelligence/intelligence_providers.dart';
 import 'package:aayutrack/core/intelligence/risk_detection_service.dart';
+import 'package:aayutrack/core/sync/sync_queue_service.dart';
+import 'package:aayutrack/core/sync/sync_status_provider.dart';
 import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/health_logs/domain/entities/health_log.dart';
@@ -61,7 +63,31 @@ class DashboardScreen extends ConsumerWidget {
     final riskAlerts = ref.watch(riskAlertsProvider);
     final intelligenceLoading = ref.watch(intelligenceLoadingProvider);
 
+    final syncStatusAsync = ref.watch(syncStatusStreamProvider);
+    final syncActionState = ref.watch(syncActionProvider);
+
     final name = profileState.profile?.fullName.split(' ').first ?? 'there';
+
+    ref.listen<SyncActionState>(syncActionProvider, (previous, next) {
+      if (previous?.successMessage != next.successMessage &&
+          next.successMessage != null &&
+          next.successMessage!.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.successMessage!)),
+        );
+      }
+
+      if (previous?.errorMessage != next.errorMessage &&
+          next.errorMessage != null &&
+          next.errorMessage!.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,6 +107,13 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildQuickActions(context),
+                  const SizedBox(height: 20),
+                  _buildSyncStatusCard(
+                    context,
+                    ref,
+                    syncStatusAsync,
+                    syncActionState,
+                  ),
                   const SizedBox(height: 20),
                   _buildTodayMedicines(context, medicineState),
                   const SizedBox(height: 20),
@@ -270,6 +303,289 @@ class DashboardScreen extends ConsumerWidget {
           children: actions.map((a) => _QuickActionButton(action: a)).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildSyncStatusCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<SyncStatusSnapshot> syncStatusAsync,
+    SyncActionState syncActionState,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(title: 'Sync Status'),
+        const SizedBox(height: 12),
+        syncStatusAsync.when(
+          loading: () => AppCard(
+            child: Row(
+              children: const [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Loading sync status...',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          error: (error, _) => AppCard(
+            color: AppColors.danger.withOpacity(0.05),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.sync_problem_rounded,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Unable to load sync status: $error',
+                    style: const TextStyle(
+                      color: AppColors.danger,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => ref.invalidate(syncStatusStreamProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                  color: AppColors.danger,
+                ),
+              ],
+            ),
+          ),
+          data: (snapshot) {
+            final status = _statusPresentation(snapshot);
+
+            return AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: status.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          status.icon,
+                          color: status.color,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              status.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              status.subtitle,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: syncActionState.isWorking
+                            ? null
+                            : () => ref.invalidate(syncStatusStreamProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SyncCountTile(
+                          label: 'Pending',
+                          value: snapshot.pendingCount,
+                          color: const Color(0xFFF59E0B),
+                          icon: Icons.schedule_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _SyncCountTile(
+                          label: 'Syncing',
+                          value: snapshot.syncingCount,
+                          color: AppColors.primary,
+                          icon: Icons.sync_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _SyncCountTile(
+                          label: 'Failed',
+                          value: snapshot.failedCount,
+                          color: AppColors.danger,
+                          icon: Icons.error_outline_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SyncCountTile(
+                          label: 'Synced',
+                          value: snapshot.syncedCount,
+                          color: AppColors.success,
+                          icon: Icons.check_circle_outline_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.storage_rounded,
+                                size: 16,
+                                color: AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Total queue items: ${snapshot.totalCount}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: syncActionState.isWorking
+                            ? null
+                            : () async {
+                                await ref
+                                    .read(syncActionProvider.notifier)
+                                    .syncNow();
+                              },
+                        icon: syncActionState.isWorking
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.sync_rounded, size: 16),
+                        label: const Text('Sync Now'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            syncActionState.isWorking || snapshot.failedCount == 0
+                            ? null
+                            : () async {
+                                await ref
+                                    .read(syncActionProvider.notifier)
+                                    .retryFailed();
+                              },
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: const Text('Retry Failed'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            syncActionState.isWorking || snapshot.syncedCount == 0
+                            ? null
+                            : () async {
+                                await ref
+                                    .read(syncActionProvider.notifier)
+                                    .clearSynced();
+                              },
+                        icon: const Icon(Icons.cleaning_services_rounded, size: 16),
+                        label: const Text('Clear Synced'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  _SyncStatusPresentation _statusPresentation(SyncStatusSnapshot snapshot) {
+    if (snapshot.failedCount > 0) {
+      return const _SyncStatusPresentation(
+        title: 'Sync Needs Attention',
+        subtitle: 'Some items failed to sync. Retry when connection is stable.',
+        color: AppColors.danger,
+        icon: Icons.sync_problem_rounded,
+      );
+    }
+
+    if (snapshot.syncingCount > 0) {
+      return const _SyncStatusPresentation(
+        title: 'Sync In Progress',
+        subtitle: 'Your offline changes are currently being uploaded.',
+        color: AppColors.primary,
+        icon: Icons.sync_rounded,
+      );
+    }
+
+    if (snapshot.pendingCount > 0) {
+      return const _SyncStatusPresentation(
+        title: 'Pending Sync',
+        subtitle: 'Local changes are queued and waiting to sync.',
+        color: Color(0xFFF59E0B),
+        icon: Icons.schedule_rounded,
+      );
+    }
+
+    return const _SyncStatusPresentation(
+      title: 'All Changes Synced',
+      subtitle: 'Your local data is currently up to date.',
+      color: AppColors.success,
+      icon: Icons.check_circle_rounded,
     );
   }
 
@@ -715,6 +1031,70 @@ class DashboardScreen extends ConsumerWidget {
     } catch (_) {
       return AppColors.primary;
     }
+  }
+}
+
+class _SyncStatusPresentation {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  const _SyncStatusPresentation({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
+}
+
+class _SyncCountTile extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+  final IconData icon;
+
+  const _SyncCountTile({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 8),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

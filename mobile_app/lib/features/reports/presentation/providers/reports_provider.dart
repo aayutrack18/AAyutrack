@@ -1,5 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
+import 'package:aayutrack/features/health_logs/presentation/providers/health_log_provider.dart';
+import 'package:aayutrack/features/medicine/presentation/providers/medicine_provider.dart';
+import 'package:aayutrack/features/profile/presentation/providers/profile_provider.dart';
+import 'package:aayutrack/features/reports/presentation/services/report_export_service.dart';
+
 class ReportSection {
   final String id;
   final String title;
@@ -193,14 +199,23 @@ class ReportsState {
 }
 
 class ReportsNotifier extends StateNotifier<ReportsState> {
-  ReportsNotifier() : super(ReportsState.initial());
+  final Ref _ref;
+
+  ReportsNotifier(this._ref) : super(ReportsState.initial());
 
   void setTemplate(String templateId) {
-    state = state.copyWith(selectedTemplateId: templateId, exportSuccess: false);
+    state = state.copyWith(
+      selectedTemplateId: templateId,
+      exportSuccess: false,
+    );
   }
 
   void setDateRange(DateTime start, DateTime end) {
-    state = state.copyWith(startDate: start, endDate: end, exportSuccess: false);
+    state = state.copyWith(
+      startDate: start,
+      endDate: end,
+      exportSuccess: false,
+    );
   }
 
   void toggleSection(String sectionId) {
@@ -228,6 +243,78 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
       isExporting: value,
       exportSuccess: value ? false : state.exportSuccess,
     );
+  }
+
+  Future<void> generateReport() async {
+    state = state.copyWith(
+      isExporting: true,
+      exportSuccess: false,
+      clearError: true,
+    );
+
+    try {
+      final compliance = _ref.read(complianceProvider);
+      final medicines = _ref.read(medicineProvider);
+      final healthLogs = _ref.read(healthLogProvider);
+      final profile = _ref.read(profileProvider).profile;
+
+      final result = await ReportExportService.saveReport(
+        reportsState: state,
+        compliance: compliance,
+        medicines: medicines,
+        healthLogs: healthLogs,
+        profile: profile,
+      );
+
+      addGeneratedReport(
+        title: result.title,
+        dateRange: result.dateRange,
+        pageCount: result.pageCount,
+        filePath: result.file.path,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isExporting: false,
+        exportSuccess: false,
+        errorMessage: 'Failed to generate report: $e',
+      );
+    }
+  }
+
+  Future<void> shareLatestReport() async {
+    state = state.copyWith(
+      isExporting: true,
+      exportSuccess: false,
+      clearError: true,
+    );
+
+    try {
+      final compliance = _ref.read(complianceProvider);
+      final medicines = _ref.read(medicineProvider);
+      final healthLogs = _ref.read(healthLogProvider);
+      final profile = _ref.read(profileProvider).profile;
+
+      final result = await ReportExportService.shareReport(
+        reportsState: state,
+        compliance: compliance,
+        medicines: medicines,
+        healthLogs: healthLogs,
+        profile: profile,
+      );
+
+      addGeneratedReport(
+        title: result.title,
+        dateRange: result.dateRange,
+        pageCount: result.pageCount,
+        filePath: result.file.path,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isExporting: false,
+        exportSuccess: false,
+        errorMessage: 'Failed to share report: $e',
+      );
+    }
   }
 
   void addGeneratedReport({
@@ -263,12 +350,17 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
     state = state.copyWith(
       isExporting: false,
       exportSuccess: true,
+      clearError: true,
       history: [newItem, ...state.history],
     );
   }
 
   void clearExportSuccess() {
     state = state.copyWith(exportSuccess: false);
+  }
+
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 
   void deleteHistory(String id) {
@@ -279,7 +371,7 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
 
 final reportsProvider =
     StateNotifierProvider<ReportsNotifier, ReportsState>((ref) {
-  return ReportsNotifier();
+  return ReportsNotifier(ref);
 });
 
 final reportTemplatesProvider = Provider<List<ReportTemplate>>((ref) {

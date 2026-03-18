@@ -9,17 +9,23 @@ class RiskAlertsScreen extends ConsumerWidget {
 
   Color _severityColor(String severity) {
     switch (severity) {
-      case 'high': return AppColors.danger;
-      case 'medium': return AppColors.warning;
-      default: return AppColors.primary;
+      case 'high':
+        return AppColors.danger;
+      case 'medium':
+        return AppColors.warning;
+      default:
+        return AppColors.primary;
     }
   }
 
   IconData _severityIcon(String severity) {
     switch (severity) {
-      case 'high': return Icons.error_rounded;
-      case 'medium': return Icons.warning_rounded;
-      default: return Icons.info_rounded;
+      case 'high':
+        return Icons.error_rounded;
+      case 'medium':
+        return Icons.warning_rounded;
+      default:
+        return Icons.info_rounded;
     }
   }
 
@@ -43,104 +49,146 @@ class RiskAlertsScreen extends ConsumerWidget {
           if (state.unreadAlertCount > 0)
             TextButton(
               onPressed: () => ref.read(complianceProvider.notifier).markAllRead(),
-              child: const Text('Mark All Read',
-                  style: TextStyle(color: AppColors.primary, fontSize: 13)),
+              child: const Text(
+                'Mark All Read',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                ),
+              ),
             ),
         ],
       ),
-      body: alerts.isEmpty
-          ? const EmptyState(
-              icon: Icons.shield_outlined,
-              title: 'No Alerts',
-              message: 'Great job! You have no risk alerts right now. Keep up the good work.',
-            )
+      body: state.isLoading
+          ? const LoadingIndicator(message: 'Loading risk alerts...')
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
               children: [
-                // Summary banner
-                AppCard(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.danger.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.notifications_active_rounded,
-                          color: AppColors.danger, size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                if (state.hasError) ...[
+                  _ErrorBanner(message: state.errorMessage!),
+                  const SizedBox(height: 12),
+                ],
+                if (alerts.isEmpty)
+                  const EmptyState(
+                    icon: Icons.shield_outlined,
+                    title: 'No Alerts',
+                    message:
+                        'Great job! You have no active risk alerts right now.',
+                  )
+                else ...[
+                  AppCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
                       children: [
-                        Text('${state.unreadAlertCount} Unread Alert${state.unreadAlertCount == 1 ? '' : 's'}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                color: AppColors.textPrimary)),
-                        const Text('Review and address these to improve compliance',
-                            style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                      ],
-                    )),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.danger,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text('${alerts.length}',
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-                    ),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-
-                // High severity first
-                ...['high', 'medium', 'low'].expand((severity) {
-                  final group = alerts.where((a) => a.severity == severity).toList();
-                  if (group.isEmpty) return <Widget>[];
-                  return [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(children: [
                         Container(
-                          width: 10,
-                          height: 10,
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: _severityColor(severity),
-                            shape: BoxShape.circle,
+                            color: AppColors.danger.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.notifications_active_rounded,
+                            color: AppColors.danger,
+                            size: 22,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          severity == 'high'
-                              ? 'High Priority'
-                              : severity == 'medium'
-                                  ? 'Medium Priority'
-                                  : 'Low Priority',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: _severityColor(severity)),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${state.unreadAlertCount} Unread Alert${state.unreadAlertCount == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const Text(
+                                'Review and address these to improve compliance',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ]),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${alerts.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    ...group.map((alert) => Padding(
+                  ),
+                  const SizedBox(height: 16),
+                  ...['high', 'medium', 'low'].expand((severity) {
+                    final group =
+                        alerts.where((a) => a.severity == severity).toList();
+                    if (group.isEmpty) return <Widget>[];
+
+                    return [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: _severityColor(severity),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              severity == 'high'
+                                  ? 'High Priority'
+                                  : severity == 'medium'
+                                      ? 'Medium Priority'
+                                      : 'Low Priority',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: _severityColor(severity),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ...group.map(
+                        (alert) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _AlertDetailCard(
                             alert: alert,
                             color: _severityColor(alert.severity),
                             icon: _severityIcon(alert.severity),
                             timeAgo: _timeAgo(alert.createdAt),
-                            onMarkRead: () =>
-                                ref.read(complianceProvider.notifier).markAlertRead(alert.id),
+                            onMarkRead: () => ref
+                                .read(complianceProvider.notifier)
+                                .markAlertRead(alert.id),
                           ),
-                        )),
-                    const SizedBox(height: 8),
-                  ];
-                }),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ];
+                  }),
+                ],
               ],
             ),
     );
@@ -169,78 +217,148 @@ class _AlertDetailCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: color),
               ),
-              child: Icon(icon, size: 20, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Expanded(
-                    child: Text(alert.title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColors.textPrimary)),
-                  ),
-                  if (!alert.isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                          color: color, shape: BoxShape.circle),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            alert.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (!alert.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
                     ),
-                ]),
-                const SizedBox(height: 2),
-                Text(timeAgo,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textMuted)),
-              ],
-            )),
-          ]),
-          const SizedBox(height: 12),
-          Text(alert.description,
-              style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                  height: 1.5)),
-          const SizedBox(height: 12),
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
+                    const SizedBox(height: 2),
+                    Text(
+                      timeAgo,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Text(alert.severity.toUpperCase(),
-                  style: TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            alert.description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+              height: 1.5,
             ),
-            const Spacer(),
-            if (!alert.isRead)
-              TextButton(
-                onPressed: onMarkRead,
-                style: TextButton.styleFrom(
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  alert.severity.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (!alert.isRead)
+                TextButton(
+                  onPressed: onMarkRead,
+                  style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                child: const Text('Mark as Read',
-                    style: TextStyle(color: AppColors.primary, fontSize: 12)),
-              )
-            else
-              const Text('Read',
-                  style: TextStyle(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Mark as Read',
+                    style: TextStyle(
+                      color: AppColors.primary,
                       fontSize: 12,
-                      color: AppColors.textMuted,
-                      fontStyle: FontStyle.italic)),
-          ]),
+                    ),
+                  ),
+                )
+              else
+                const Text(
+                  'Read',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+
+  const _ErrorBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: AppColors.danger.withOpacity(0.06),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.danger,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontSize: 12,
+                height: 1.45,
+              ),
+            ),
+          ),
         ],
       ),
     );

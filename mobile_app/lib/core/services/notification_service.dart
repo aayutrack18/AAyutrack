@@ -367,7 +367,8 @@ class NotificationService {
   Future<void> _configureLocalTimezone() async {
     try {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      final location = tz.getLocation(timezoneInfo.identifier);
+      final resolvedIdentifier = _resolveTimezoneIdentifier(timezoneInfo.identifier);
+      final location = tz.getLocation(resolvedIdentifier);
       tz.setLocalLocation(location);
     } catch (e) {
       if (kDebugMode) {
@@ -375,6 +376,15 @@ class NotificationService {
       }
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
+  }
+
+
+  String _resolveTimezoneIdentifier(String rawIdentifier) {
+    final normalized = rawIdentifier.trim();
+    if (normalized == 'Asia/Calcutta' || normalized == 'Calcutta') {
+      return 'Asia/Kolkata';
+    }
+    return normalized;
   }
 
   (int, int)? _parseTime(String raw) {
