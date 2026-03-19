@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aayutrack/core/constants/app_constants.dart';
 import 'package:aayutrack/core/theme/app_theme.dart';
 import 'package:aayutrack/core/widgets/app_widgets.dart';
 import 'package:aayutrack/features/compliance/presentation/providers/compliance_provider.dart';
@@ -48,7 +49,8 @@ class RiskAlertsScreen extends ConsumerWidget {
         actions: [
           if (state.unreadAlertCount > 0)
             TextButton(
-              onPressed: () => ref.read(complianceProvider.notifier).markAllRead(),
+              onPressed: () =>
+                  ref.read(complianceProvider.notifier).markAllRead(),
               child: const Text(
                 'Mark All Read',
                 style: TextStyle(
@@ -69,11 +71,25 @@ class RiskAlertsScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                 ],
                 if (alerts.isEmpty)
-                  const EmptyState(
+                  EmptyState(
                     icon: Icons.shield_outlined,
-                    title: 'No Alerts',
+                    title: 'No Active Risk Alerts',
                     message:
-                        'Great job! You have no active risk alerts right now.',
+                        'That is a good sign. Your recent activity does not show any active risk flags right now.',
+                    accentColor: AppColors.success,
+                    highlights: const [
+                      'Nothing urgent',
+                      'Adherence looks stable',
+                      'Keep tracking daily',
+                    ],
+                    actionLabel: 'View Compliance',
+                    onAction: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.complianceOverview,
+                    ),
+                    secondaryActionLabel: 'Open Reports',
+                    onSecondaryAction: () =>
+                        Navigator.pushNamed(context, AppRoutes.reports),
                   )
                 else ...[
                   AppCard(

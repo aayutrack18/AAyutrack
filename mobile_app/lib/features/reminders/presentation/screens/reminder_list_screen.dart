@@ -51,16 +51,20 @@ class ReminderListScreen extends ConsumerWidget {
             icon: const Icon(Icons.tune_rounded, color: AppColors.textMuted),
             tooltip: 'Notification Settings',
             onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const NotificationSettingsScreen())),
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationSettingsScreen(),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.add_rounded, color: AppColors.primary),
             onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const AddReminderScreen())),
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AddReminderScreen(),
+              ),
+            ),
           ),
         ],
       ),
@@ -75,23 +79,40 @@ class ReminderListScreen extends ConsumerWidget {
               : state.reminders.isEmpty
                   ? EmptyState(
                       icon: Icons.alarm_outlined,
-                      title: 'No Reminders Yet',
+                      title: 'No Reminders Set Yet',
                       message:
-                          'Add reminders for medicines, appointments, and health measurements.',
+                          'Create reminders for medicines, measurements, and daily care tasks so today’s schedule always feels guided.',
+                      accentColor: AppColors.accent,
+                      highlights: const [
+                        'Medicine timings',
+                        'Measurement prompts',
+                        'Appointment support',
+                      ],
                       actionLabel: 'Add Reminder',
                       onAction: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AddReminderScreen())),
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddReminderScreen(),
+                        ),
+                      ),
+                      secondaryActionLabel: 'Notification Settings',
+                      onSecondaryAction: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationSettingsScreen(),
+                        ),
+                      ),
                     )
                   : _buildList(context, ref, state),
       floatingActionButton: state.reminders.isNotEmpty
           ? FloatingActionButton(
               heroTag: 'reminder_list_fab',
               onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AddReminderScreen())),
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AddReminderScreen(),
+                ),
+              ),
               backgroundColor: AppColors.primary,
               child: const Icon(Icons.add_rounded, color: Colors.white),
             )
@@ -100,48 +121,54 @@ class ReminderListScreen extends ConsumerWidget {
   }
 
   Widget _buildList(
-      BuildContext context, WidgetRef ref, ReminderState state) {
+    BuildContext context,
+    WidgetRef ref,
+    ReminderState state,
+  ) {
     final enabled = state.enabledReminders;
     final disabled = state.reminders.where((r) => !r.isEnabled).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: [
-        // Summary chips
-        Row(children: [
-          _SummaryChip(
-            label: '${enabled.length} Active',
-            color: AppColors.success,
-            icon: Icons.alarm_on_rounded,
-          ),
-          const SizedBox(width: 8),
-          _SummaryChip(
-            label: '${disabled.length} Paused',
-            color: AppColors.textMuted,
-            icon: Icons.alarm_off_rounded,
-          ),
-        ]),
+        Row(
+          children: [
+            _SummaryChip(
+              label: '${enabled.length} Active',
+              color: AppColors.success,
+              icon: Icons.alarm_on_rounded,
+            ),
+            const SizedBox(width: 8),
+            _SummaryChip(
+              label: '${disabled.length} Paused',
+              color: AppColors.textMuted,
+              icon: Icons.alarm_off_rounded,
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
-
         if (enabled.isNotEmpty) ...[
           const SectionHeader(title: 'Active Reminders'),
           const SizedBox(height: 12),
-          ...enabled.map((r) => _ReminderCard(
-                reminder: r,
-                icon: _typeIcon(r.type),
-                color: _typeColor(r.type),
-              )),
+          ...enabled.map(
+            (r) => _ReminderCard(
+              reminder: r,
+              icon: _typeIcon(r.type),
+              color: _typeColor(r.type),
+            ),
+          ),
           const SizedBox(height: 8),
         ],
-
         if (disabled.isNotEmpty) ...[
           const SectionHeader(title: 'Paused Reminders'),
           const SizedBox(height: 12),
-          ...disabled.map((r) => _ReminderCard(
-                reminder: r,
-                icon: _typeIcon(r.type),
-                color: _typeColor(r.type),
-              )),
+          ...disabled.map(
+            (r) => _ReminderCard(
+              reminder: r,
+              icon: _typeIcon(r.type),
+              color: _typeColor(r.type),
+            ),
+          ),
         ],
       ],
     );
@@ -153,8 +180,11 @@ class _SummaryChip extends StatelessWidget {
   final Color color;
   final IconData icon;
 
-  const _SummaryChip(
-      {required this.label, required this.color, required this.icon});
+  const _SummaryChip({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -165,15 +195,20 @@ class _SummaryChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Row(children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 6),
-        Text(label,
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
             style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color)),
-      ]),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -194,127 +229,149 @@ class _ReminderCard extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AppCard(
-        child: Row(children: [
-          // Color bar
-          Container(
-            width: 4,
-            height: 64,
-            decoration: BoxDecoration(
-              color: reminder.isEnabled
-                  ? color
-                  : color.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 64,
+              decoration: BoxDecoration(
+                color: reminder.isEnabled ? color : color.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(reminder.isEnabled ? 0.12 : 0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon,
+            const SizedBox(width: 12),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(reminder.isEnabled ? 0.12 : 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
                 color: reminder.isEnabled ? color : color.withOpacity(0.4),
-                size: 20),
-          ),
-          const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reminder.title,
-                  style: TextStyle(
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    reminder.title,
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                       color: reminder.isEnabled
                           ? AppColors.textPrimary
-                          : AppColors.textMuted),
-                ),
-                const SizedBox(height: 3),
-                Row(children: [
-                  Icon(Icons.access_time_rounded,
-                      size: 12, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(reminder.time,
-                      style: TextStyle(
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        reminder.time,
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: reminder.isEnabled
                               ? color
-                              : AppColors.textMuted)),
-                  if (reminder.repeatDays.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                      if (reminder.repeatDays.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            reminder.isDaily
+                                ? 'Every day'
+                                : reminder.repeatDays.join(', '),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (reminder.description.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
                       child: Text(
-                        reminder.isDaily
-                            ? 'Every day'
-                            : reminder.repeatDays.join(', '),
-                        style: const TextStyle(
-                            fontSize: 11, color: AppColors.textMuted),
+                        reminder.description,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Column(
+              children: [
+                Switch.adaptive(
+                  value: reminder.isEnabled,
+                  onChanged: (v) => ref
+                      .read(reminderProvider.notifier)
+                      .toggleReminder(reminder.id, v),
+                  activeColor: color,
+                ),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditReminderScreen(reminder: reminder),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        size: 16,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () async {
+                        final confirm = await showConfirmationSheet(
+                          context,
+                          title: 'Delete Reminder',
+                          message: 'Delete "${reminder.title}"?',
+                          confirmLabel: 'Delete',
+                          isDangerous: true,
+                        );
+                        if (confirm == true) {
+                          ref
+                              .read(reminderProvider.notifier)
+                              .deleteReminder(reminder.id);
+                        }
+                      },
+                      child: const Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: AppColors.danger,
                       ),
                     ),
                   ],
-                ]),
-                if (reminder.description.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Text(
-                      reminder.description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted),
-                    ),
-                  ),
+                ),
               ],
             ),
-          ),
-          // Controls
-          Column(children: [
-            Switch.adaptive(
-              value: reminder.isEnabled,
-              onChanged: (v) => ref
-                  .read(reminderProvider.notifier)
-                  .toggleReminder(reminder.id, v),
-              activeColor: color,
-            ),
-            Row(children: [
-              GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          EditReminderScreen(reminder: reminder)),
-                ),
-                child: const Icon(Icons.edit_outlined,
-                    size: 16, color: AppColors.textMuted),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () async {
-                  final confirm = await showConfirmationSheet(context,
-                    title: 'Delete Reminder',
-                    message: 'Delete "${reminder.title}"?',
-                    confirmLabel: 'Delete',
-                    isDangerous: true,
-                  );
-                  if (confirm == true) {
-                    ref
-                        .read(reminderProvider.notifier)
-                        .deleteReminder(reminder.id);
-                  }
-                },
-                child: const Icon(Icons.delete_outline,
-                    size: 16, color: AppColors.danger),
-              ),
-            ]),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }

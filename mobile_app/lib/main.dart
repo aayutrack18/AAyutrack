@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/services/demo_data_seed_service.dart';
 import 'core/services/fcm_service.dart';
 import 'core/sync/sync_providers.dart';
 import 'core/theme/app_theme.dart';
@@ -24,6 +25,9 @@ Future<void> main() async {
   await FcmService.instance.initialize();
 
   final container = ProviderContainer();
+
+  await container.read(demoDataSeedServiceProvider).seedIfNeeded();
+  await container.read(appStartupSyncProvider);
 
   runApp(
     UncontrolledProviderScope(
@@ -46,7 +50,6 @@ class _MyAppState extends ConsumerState<MyApp> {
     super.initState();
 
     Future.microtask(() async {
-      await ref.read(appStartupSyncProvider);
       await FcmService.instance.syncTokenForSignedInUser();
     });
   }

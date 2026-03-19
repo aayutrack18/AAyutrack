@@ -68,11 +68,27 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                 ],
                 if (!state.hasAnyData) ...[
-                  const EmptyState(
+                  EmptyState(
                     icon: Icons.insights_outlined,
-                    title: 'No Compliance Data Yet',
+                    title: 'No Compliance Insights Yet',
                     message:
-                        'Compliance insights will appear after medicine schedules, reminders, or dose activity are available.',
+                        'Compliance becomes useful when medicines, reminders, and dose activity start working together. Once that data is available, this screen will show your adherence story.',
+                    accentColor: AppColors.primary,
+                    highlights: const [
+                      'Adherence score',
+                      'Weekly trends',
+                      'Risk alerts',
+                    ],
+                    actionLabel: 'Open Reports',
+                    onAction: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ReportsScreen(),
+                      ),
+                    ),
+                    secondaryActionLabel: 'View Alerts',
+                    onSecondaryAction: () =>
+                        Navigator.pushNamed(context, AppRoutes.riskAlerts),
                   ),
                   const SizedBox(height: 16),
                   _buildDoctorSummary(context),
@@ -133,8 +149,7 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                 LinearProgressIndicator(
                   value: state.medicineAdherence / 100,
                   backgroundColor: AppColors.border,
-                  valueColor:
-                      const AlwaysStoppedAnimation(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                   borderRadius: BorderRadius.circular(3),
                   minHeight: 5,
                 ),
@@ -179,8 +194,7 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                 LinearProgressIndicator(
                   value: state.logAdherence / 100,
                   backgroundColor: AppColors.border,
-                  valueColor:
-                      const AlwaysStoppedAnimation(AppColors.accent),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.accent),
                   borderRadius: BorderRadius.circular(3),
                   minHeight: 5,
                 ),
@@ -209,8 +223,7 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -420,10 +433,8 @@ class ComplianceOverviewScreen extends ConsumerWidget {
               ),
               if (state.alerts.isNotEmpty)
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.riskAlerts,
-                  ),
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.riskAlerts),
                   child: const Text(
                     'View All',
                     style: TextStyle(
@@ -553,8 +564,10 @@ class _ScoreHero extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(999),

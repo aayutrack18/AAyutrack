@@ -247,6 +247,11 @@ class EmptyState extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+  final List<String> highlights;
+  final Color? accentColor;
+  final bool compact;
 
   const EmptyState({
     super.key,
@@ -255,51 +260,123 @@ class EmptyState extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+    this.highlights = const [],
+    this.accentColor,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color color = accentColor ?? AppColors.primary;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 40, color: AppColors.primary),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+        padding: EdgeInsets.all(compact ? AppSpacing.lg : AppSpacing.xl),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: AppCard(
+            padding: EdgeInsets.all(compact ? 18 : 22),
+            borderRadius: AppRadius.xl,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: compact ? 72 : 88,
+                  height: compact ? 72 : 88,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        color.withOpacity(0.16),
+                        color.withOpacity(0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color.withOpacity(0.14)),
                   ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textMuted,
-                    height: 1.5,
+                  child: Icon(
+                    icon,
+                    size: compact ? 32 : 40,
+                    color: color,
                   ),
+                ),
+                SizedBox(height: compact ? 16 : 20),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textMuted,
+                        height: 1.5,
+                      ),
+                ),
+                if (highlights.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: highlights
+                        .map(
+                          (item) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(999),
+                              border:
+                                  Border.all(color: color.withOpacity(0.14)),
+                            ),
+                            child: Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                if ((actionLabel != null && onAction != null) ||
+                    (secondaryActionLabel != null &&
+                        onSecondaryAction != null)) ...[
+                  const SizedBox(height: 22),
+                  if (actionLabel != null && onAction != null)
+                    AppButton(
+                      label: actionLabel!,
+                      onPressed: onAction,
+                      icon: Icons.add_rounded,
+                    ),
+                  if (secondaryActionLabel != null &&
+                      onSecondaryAction != null) ...[
+                    const SizedBox(height: 10),
+                    AppButton(
+                      label: secondaryActionLabel!,
+                      onPressed: onSecondaryAction,
+                      outlined: true,
+                      icon: Icons.arrow_forward_rounded,
+                    ),
+                  ],
+                ],
+              ],
             ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: AppSpacing.xl),
-              AppButton(
-                label: actionLabel!,
-                onPressed: onAction,
-                width: 200,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
