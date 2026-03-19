@@ -28,42 +28,105 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = isLoading
-        ? const SizedBox(
+    final Color resolvedForegroundColor = outlined
+        ? (foregroundColor ?? AppColors.primary)
+        : (foregroundColor ?? Colors.white);
+
+    final Widget child = isLoading
+        ? SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(
               strokeWidth: 2.4,
-              color: Colors.white,
+              color: resolvedForegroundColor,
             ),
           )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18),
-                const SizedBox(width: 8),
-              ],
-              Text(label),
-            ],
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final bool compact = constraints.maxWidth.isFinite &&
+                  constraints.maxWidth > 0 &&
+                  constraints.maxWidth < 170;
+
+              final textWidget = Text(
+                label,
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                softWrap: true,
+              );
+
+              if (icon == null) {
+                return Center(child: textWidget);
+              }
+
+              if (compact) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 18),
+                    const SizedBox(height: 4),
+                    textWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18),
+                  const SizedBox(width: 8),
+                  Flexible(child: textWidget),
+                ],
+              );
+            },
           );
 
-    final size = width != null
-        ? Size(width!, AppSizes.buttonHeight)
-        : const Size(double.infinity, AppSizes.buttonHeight);
+    final ButtonStyle baseStyle = (outlined
+            ? OutlinedButton.styleFrom(
+                foregroundColor: resolvedForegroundColor,
+                side: BorderSide(color: resolvedForegroundColor),
+              )
+            : ElevatedButton.styleFrom(
+                backgroundColor: backgroundColor ?? AppColors.primary,
+                foregroundColor: resolvedForegroundColor,
+              ))
+        .copyWith(
+      minimumSize: WidgetStateProperty.all(
+        Size(width ?? 0, AppSizes.buttonHeight),
+      ),
+      fixedSize: width != null
+          ? WidgetStateProperty.all(Size(width!, AppSizes.buttonHeight))
+          : null,
+      padding: WidgetStateProperty.all(
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      alignment: Alignment.center,
+      textStyle: WidgetStateProperty.all(
+        const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          height: 1.1,
+        ),
+      ),
+      shape: WidgetStateProperty.all(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+      ),
+    );
+
+    final Widget buttonChild = Center(child: child);
 
     if (outlined) {
       return SizedBox(
         width: width,
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
-          style: OutlinedButton.styleFrom(
-            minimumSize: size,
-            foregroundColor: foregroundColor ?? AppColors.primary,
-            side: BorderSide(color: foregroundColor ?? AppColors.primary),
-          ),
-          child: child,
+          style: baseStyle,
+          child: buttonChild,
         ),
       );
     }
@@ -72,12 +135,8 @@ class AppButton extends StatelessWidget {
       width: width,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          minimumSize: size,
-          backgroundColor: backgroundColor ?? AppColors.primary,
-          foregroundColor: foregroundColor ?? Colors.white,
-        ),
-        child: child,
+        style: baseStyle,
+        child: buttonChild,
       ),
     );
   }
@@ -181,7 +240,18 @@ class AppDropdown<T> extends StatelessWidget {
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           value: value,
-          items: items,
+          isExpanded: true,
+          items: items
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item.value,
+                  enabled: item.enabled,
+                  alignment: item.alignment,
+                  onTap: item.onTap,
+                  child: item.child,
+                ),
+              )
+              .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(hintText: hint),
         ),
@@ -488,34 +558,76 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 330;
+
+        if (compact && actionLabel != null && onAction != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
               ),
-        ),
-        if (actionLabel != null && onAction != null)
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              actionLabel!,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
               ),
             ),
-          ),
-      ],
+            if (actionLabel != null && onAction != null)
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -648,23 +760,31 @@ class MetricTile extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                ),
               ),
               if (unit != null) ...[
                 const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    unit!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      unit!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
                   ),
                 ),
               ],
@@ -673,6 +793,8 @@ class MetricTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textMuted,
                 ),

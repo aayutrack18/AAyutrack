@@ -228,39 +228,44 @@ class _GenerateTab extends ConsumerWidget {
               'A concise snapshot of adherence, activity, and reporting coverage.',
         ),
         const SizedBox(height: 10),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.55,
-          children: [
-            _MetricTile(
-              label: 'Medicine Adherence',
-              value: '${compliance.medicineAdherence.toInt()}%',
-              icon: Icons.medication_rounded,
-              color: AppColors.primary,
-            ),
-            _MetricTile(
-              label: 'Health Log Rate',
-              value: '${compliance.logAdherence.toInt()}%',
-              icon: Icons.monitor_heart_rounded,
-              color: AppColors.accent,
-            ),
-            _MetricTile(
-              label: 'Active Medicines',
-              value: '${medicines.activeMedicines.length}',
-              icon: Icons.tablet_rounded,
-              color: const Color(0xFF7C3AED),
-            ),
-            _MetricTile(
-              label: 'Readings Logged',
-              value: '${healthLogs.logs.length}',
-              icon: Icons.bar_chart_rounded,
-              color: const Color(0xFFF59E0B),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 380;
+            return GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: isCompact ? 1.28 : 1.55,
+              children: [
+                _MetricTile(
+                  label: 'Medicine Adherence',
+                  value: '${compliance.medicineAdherence.toInt()}%',
+                  icon: Icons.medication_rounded,
+                  color: AppColors.primary,
+                ),
+                _MetricTile(
+                  label: 'Health Log Rate',
+                  value: '${compliance.logAdherence.toInt()}%',
+                  icon: Icons.monitor_heart_rounded,
+                  color: AppColors.accent,
+                ),
+                _MetricTile(
+                  label: 'Active Medicines',
+                  value: '${medicines.activeMedicines.length}',
+                  icon: Icons.tablet_rounded,
+                  color: const Color(0xFF7C3AED),
+                ),
+                _MetricTile(
+                  label: 'Readings Logged',
+                  value: '${healthLogs.logs.length}',
+                  icon: Icons.bar_chart_rounded,
+                  color: const Color(0xFFF59E0B),
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 20),
         const _SectionIntro(
@@ -284,59 +289,7 @@ class _GenerateTab extends ConsumerWidget {
             ),
           )
         else
-          AppCard(
-            child: SizedBox(
-              height: 120,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: compliance.weeklyTrend.map((entry) {
-                  final pct = entry.percentage / 100;
-                  final barColor = entry.percentage >= 90
-                      ? AppColors.success
-                      : entry.percentage >= 60
-                          ? AppColors.warning
-                          : AppColors.danger;
-                  return Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${entry.percentage.toInt()}',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: barColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 26,
-                          height: 90 * pct.clamp(0.0, 1.0),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [barColor.withOpacity(0.6), barColor],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          entry.day,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
+          _WeeklyAdherenceChart(trend: compliance.weeklyTrend),
         const SizedBox(height: 20),
         const _SectionIntro(
           title: 'Report template',
@@ -372,6 +325,7 @@ class _GenerateTab extends ConsumerWidget {
                 ),
                 padding: const EdgeInsets.all(14),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(template.icon, style: const TextStyle(fontSize: 28)),
                     const SizedBox(width: 14),
@@ -395,17 +349,22 @@ class _GenerateTab extends ConsumerWidget {
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
+                              height: 1.35,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    if (isSelected)
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
+                    const SizedBox(width: 10),
+                    Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textMuted.withOpacity(0.5),
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -511,35 +470,51 @@ class _GenerateTab extends ConsumerWidget {
                   ),
         ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: AppButton(
-                label: 'Export PDF',
-                icon: Icons.picture_as_pdf_rounded,
-                outlined: true,
-                isLoading: reportsState.isExporting,
-                onPressed: reportsState.isExporting ||
-                        isBaseDataLoading ||
-                        !reportsState.canGenerate
-                    ? null
-                    : () => _quickSave(context, ref),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppButton(
-                label: 'Share PDF',
-                icon: Icons.share_rounded,
-                isLoading: false,
-                onPressed: reportsState.isExporting ||
-                        isBaseDataLoading ||
-                        !reportsState.canGenerate
-                    ? null
-                    : () => _quickShare(context, ref),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 380;
+
+            final exportButton = AppButton(
+              label: 'Export PDF',
+              icon: Icons.picture_as_pdf_rounded,
+              outlined: true,
+              isLoading: reportsState.isExporting,
+              onPressed: reportsState.isExporting ||
+                      isBaseDataLoading ||
+                      !reportsState.canGenerate
+                  ? null
+                  : () => _quickSave(context, ref),
+            );
+
+            final shareButton = AppButton(
+              label: 'Share PDF',
+              icon: Icons.share_rounded,
+              isLoading: false,
+              onPressed: reportsState.isExporting ||
+                      isBaseDataLoading ||
+                      !reportsState.canGenerate
+                  ? null
+                  : () => _quickShare(context, ref),
+            );
+
+            if (compact) {
+              return Column(
+                children: [
+                  exportButton,
+                  const SizedBox(height: 10),
+                  shareButton,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: exportButton),
+                const SizedBox(width: 10),
+                Expanded(child: shareButton),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 16),
       ],
@@ -699,30 +674,46 @@ class _HistoryTab extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          label: 'Preview Current Setup',
-                          icon: Icons.visibility_rounded,
-                          outlined: true,
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ReportPreviewScreen(),
-                            ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 420;
+
+                      final previewButton = AppButton(
+                        label: compact ? 'Preview' : 'Preview Current Setup',
+                        icon: Icons.visibility_rounded,
+                        outlined: true,
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReportPreviewScreen(),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AppButton(
-                          label: 'Share Again',
-                          icon: Icons.share_rounded,
-                          onPressed: () => _shareHistoryItem(context, item),
-                        ),
-                      ),
-                    ],
+                      );
+
+                      final shareButton = AppButton(
+                        label: compact ? 'Share' : 'Share Again',
+                        icon: Icons.share_rounded,
+                        onPressed: () => _shareHistoryItem(context, item),
+                      );
+
+                      if (compact) {
+                        return Column(
+                          children: [
+                            previewButton,
+                            const SizedBox(height: 10),
+                            shareButton,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: previewButton),
+                          const SizedBox(width: 10),
+                          Expanded(child: shareButton),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   Align(
@@ -763,6 +754,110 @@ class _HistoryTab extends ConsumerWidget {
   }
 }
 
+class _WeeklyAdherenceChart extends StatelessWidget {
+  final List<dynamic> trend;
+
+  const _WeeklyAdherenceChart({required this.trend});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 380;
+        final double chartHeight = compact ? 168 : 182;
+        final double barMaxHeight = compact ? 96 : 108;
+        final double barWidth = compact ? 24 : 28;
+        final double labelFont = compact ? 9 : 10;
+        final double valueFont = compact ? 10 : 11;
+
+        return AppCard(
+          child: SizedBox(
+            height: chartHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: trend.map((entry) {
+                final double percentage =
+                    ((entry.percentage as num?)?.toDouble() ?? 0)
+                        .clamp(0, 100)
+                        .toDouble();
+                final double pct = percentage / 100;
+
+                final Color barColor = percentage >= 90
+                    ? AppColors.success
+                    : percentage >= 60
+                        ? AppColors.warning
+                        : AppColors.danger;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          percentage.toInt().toString(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: valueFont,
+                            fontWeight: FontWeight.w700,
+                            color: barColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: barMaxHeight,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              width: barWidth,
+                              height: (barMaxHeight * pct).clamp(
+                                percentage <= 0 ? 4 : 12,
+                                barMaxHeight,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    barColor.withOpacity(0.65),
+                                    barColor,
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 16,
+                          child: Center(
+                            child: Text(
+                              '${entry.day}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: labelFont,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _DateRangeSelector extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
@@ -795,6 +890,94 @@ class _DateRangeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasInvalidRange = endDate.isBefore(startDate);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final compact = screenWidth < 380;
+
+    final fromCard = GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: startDate,
+          firstDate: DateTime(2020),
+          lastDate: endDate,
+        );
+        if (picked != null) onChanged(picked, endDate);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'From',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _fmt(startDate),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final toCard = GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: endDate,
+          firstDate: startDate,
+          lastDate: DateTime.now(),
+        );
+        if (picked != null) onChanged(startDate, picked);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'To',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _fmt(endDate),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return AppCard(
       child: Column(
@@ -809,102 +992,35 @@ class _DateRangeSelector extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: startDate,
-                      firstDate: DateTime(2020),
-                      lastDate: endDate,
-                    );
-                    if (picked != null) onChanged(picked, endDate);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'From',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _fmt(startDate),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
+          if (compact)
+            Column(
+              children: [
+                fromCard,
+                const SizedBox(height: 10),
+                const Icon(
+                  Icons.arrow_downward_rounded,
                   color: AppColors.textMuted,
                   size: 18,
                 ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: endDate,
-                      firstDate: startDate,
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) onChanged(startDate, picked);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'To',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _fmt(endDate),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 10),
+                toCard,
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: fromCard),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppColors.textMuted,
+                    size: 18,
                   ),
                 ),
-              ),
-            ],
-          ),
+                Expanded(child: toCard),
+              ],
+            ),
           if (hasInvalidRange) ...[
             const SizedBox(height: 8),
             const Text(
@@ -1001,13 +1117,20 @@ class _MetricTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: color),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-              color: color,
+          const SizedBox(height: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  color: color,
+                ),
+              ),
             ),
           ),
           Text(
@@ -1016,7 +1139,7 @@ class _MetricTile extends StatelessWidget {
               fontSize: 11,
               color: AppColors.textMuted,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -1279,6 +1402,8 @@ class _ReportsHeroCard extends StatelessWidget {
                       ),
                       child: Text(
                         scoreLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -1428,12 +1553,16 @@ class _HeroPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: Colors.white),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

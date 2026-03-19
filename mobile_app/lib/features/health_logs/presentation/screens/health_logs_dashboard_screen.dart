@@ -88,29 +88,36 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 const SectionHeader(title: 'Latest Readings'),
                 const SizedBox(height: 12),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.25,
-                  children: MetricType.values.map((type) {
-                    final latest = state.latestOfType(type);
-                    final color = _metricColor(type);
-                    return _MetricCard(
-                      type: type,
-                      log: latest,
-                      color: color,
-                      icon: _metricIcon(type),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => MetricDetailScreen(metricType: type),
-                        ),
-                      ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 380;
+
+                    return GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: isCompact ? 1.05 : 1.22,
+                      children: MetricType.values.map((type) {
+                        final latest = state.latestOfType(type);
+                        final color = _metricColor(type);
+                        return _MetricCard(
+                          type: type,
+                          log: latest,
+                          color: color,
+                          icon: _metricIcon(type),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  MetricDetailScreen(metricType: type),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     );
-                  }).toList(),
+                  },
                 ),
                 const SizedBox(height: 20),
                 SectionHeader(
@@ -173,32 +180,33 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
   Widget _buildLogButton(BuildContext context) {
     return GradientCard(
       colors: const [AppColors.accent, Color(0xFF0D9488)],
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Log a Reading',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 380;
+
+          final textSection = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Log a Reading',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Track BP, sugar, weight & more',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 12,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Track BP, sugar, weight & more',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 12,
                 ),
-              ],
-            ),
-          ),
-          ElevatedButton(
+              ),
+            ],
+          );
+
+          final actionButton = ElevatedButton(
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddHealthLogScreen()),
@@ -216,8 +224,30 @@ class HealthLogsDashboardScreen extends ConsumerWidget {
               'Log Now',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
-          ),
-        ],
+          );
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                textSection,
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: actionButton,
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: textSection),
+              const SizedBox(width: 12),
+              actionButton,
+            ],
+          );
+        },
       ),
     );
   }
@@ -254,7 +284,6 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(7),
@@ -264,19 +293,28 @@ class _MetricCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 16, color: color),
               ),
-              if (log != null)
-                Text(
-                  _timeAgo(log!.recordedAt),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    log != null ? _timeAgo(log!.recordedAt) : '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
+              ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 14),
           Text(
             log?.displayValue ?? '--',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: log != null ? 20 : 22,
               fontWeight: FontWeight.w800,
@@ -284,14 +322,19 @@ class _MetricCard extends StatelessWidget {
                   log != null ? AppColors.textPrimary : AppColors.textMuted,
             ),
           ),
-          if (log != null && type.unit.isNotEmpty)
+          if (log != null && type.unit.isNotEmpty) ...[
+            const SizedBox(height: 2),
             Text(
               type.unit,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
                 color: AppColors.textMuted,
               ),
             ),
+          ],
+          const SizedBox(height: 4),
           Text(
             type.label,
             style: const TextStyle(
@@ -299,7 +342,7 @@ class _MetricCard extends StatelessWidget {
               color: AppColors.textMuted,
               fontWeight: FontWeight.w500,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -377,26 +420,34 @@ class _LogListItem extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                log.displayValue,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  color: color,
-                ),
-              ),
-              if (log.type.unit.isNotEmpty)
+          const SizedBox(width: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 90),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  log.type.unit,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
+                  log.displayValue,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: color,
                   ),
                 ),
-            ],
+                if (log.type.unit.isNotEmpty)
+                  Text(
+                    log.type.unit,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -465,7 +516,10 @@ class _EmptyLogsCard extends StatelessWidget {
             children: const [
               _HighlightChip(label: 'BP tracking', color: AppColors.accent),
               _HighlightChip(label: 'Trend history', color: AppColors.accent),
-              _HighlightChip(label: 'Doctor summaries', color: AppColors.accent),
+              _HighlightChip(
+                label: 'Doctor summaries',
+                color: AppColors.accent,
+              ),
             ],
           ),
           const SizedBox(height: 18),

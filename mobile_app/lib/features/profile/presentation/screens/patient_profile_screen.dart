@@ -138,7 +138,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: isCompact ? 286 : 274,
+          expandedHeight: isCompact ? 304 : 290,
           pinned: true,
           backgroundColor: AppColors.primary,
           leading: const SizedBox.shrink(),
@@ -171,14 +171,14 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     20,
-                    isCompact ? 16 : 20,
+                    isCompact ? 18 : 22,
                     20,
-                    isCompact ? 28 : 24,
+                    isCompact ? 30 : 26,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(height: isCompact ? 32 : 36),
+                      SizedBox(height: isCompact ? 36 : 40),
                       CircleAvatar(
                         radius: isCompact ? 40 : 44,
                         backgroundColor: Colors.white.withOpacity(0.2),
@@ -478,8 +478,9 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
           child: Text(
             value,
             textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            maxLines: 3,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,

@@ -20,6 +20,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _dosageCtrl;
   late final TextEditingController _instructionsCtrl;
+
   String _frequency = 'Once Daily';
   String _form = 'Tablet';
   List<TimeOfDay> _times = [const TimeOfDay(hour: 8, minute: 0)];
@@ -27,18 +28,32 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
   String _selectedColor = '#1D4ED8';
 
   final _frequencies = [
-    'Once Daily','Twice Daily','Three Times Daily',
-    'Every 6 Hours','Weekly','As Needed',
+    'Once Daily',
+    'Twice Daily',
+    'Three Times Daily',
+    'Every 6 Hours',
+    'Weekly',
+    'As Needed',
   ];
 
   final _forms = [
-    'Tablet','Capsule','Syrup','Injection',
-    'Drops','Inhaler','Patch','Cream',
+    'Tablet',
+    'Capsule',
+    'Syrup',
+    'Injection',
+    'Drops',
+    'Inhaler',
+    'Patch',
+    'Cream',
   ];
 
   final _colorOptions = [
-    '#1D4ED8','#14B8A6','#7C3AED',
-    '#F59E0B','#DC2626','#16A34A',
+    '#1D4ED8',
+    '#14B8A6',
+    '#7C3AED',
+    '#F59E0B',
+    '#DC2626',
+    '#16A34A',
   ];
 
   bool get _isEditing => widget.existing != null;
@@ -50,6 +65,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _dosageCtrl = TextEditingController(text: e?.dosage ?? '');
     _instructionsCtrl = TextEditingController(text: e?.instructions ?? '');
+
     if (e != null) {
       _frequency = e.frequency;
       _form = e.form;
@@ -80,17 +96,24 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
       context: context,
       initialTime: _times[index],
     );
-    if (picked != null) setState(() => _times[index] = picked);
+    if (picked != null) {
+      setState(() => _times[index] = picked);
+    }
   }
 
-  void _addTime() => setState(() => _times.add(const TimeOfDay(hour: 12, minute: 0)));
+  void _addTime() {
+    setState(() => _times.add(const TimeOfDay(hour: 12, minute: 0)));
+  }
 
   void _removeTime(int index) {
-    if (_times.length > 1) setState(() => _times.removeAt(index));
+    if (_times.length > 1) {
+      setState(() => _times.removeAt(index));
+    }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
     final medicine = Medicine(
@@ -117,23 +140,26 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
       await notifier.addMedicine(medicine);
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isEditing ? 'Medicine updated!' : 'Medicine added!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.pop(context);
-    }
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isEditing ? 'Medicine updated!' : 'Medicine added!'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final selColor = Color(
-        int.parse(_selectedColor.replaceFirst('#', '0xFF')));
+      int.parse(_selectedColor.replaceFirst('#', '0xFF')),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -142,9 +168,13 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _save,
-            child: const Text('Save',
-                style: TextStyle(
-                    color: AppColors.primary, fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -153,7 +183,6 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            // Header color preview
             Container(
               height: 6,
               decoration: BoxDecoration(
@@ -167,11 +196,14 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Basic Info',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Basic Info',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   AppTextField(
                     label: 'Medicine Name',
@@ -189,33 +221,65 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
                         v == null || v.isEmpty ? 'Dosage is required' : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(children: [
-                    Expanded(
-                      child: AppDropdown<String>(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 380;
+
+                      final formField = AppDropdown<String>(
                         label: 'Form',
                         value: _form,
                         items: _forms
-                            .map((f) =>
-                                DropdownMenuItem(value: f, child: Text(f)))
+                            .map(
+                              (f) => DropdownMenuItem<String>(
+                                value: f,
+                                child: Text(
+                                  f,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
                             .toList(),
-                        onChanged: (v) =>
-                            setState(() => _form = v ?? _form),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppDropdown<String>(
+                        onChanged: (v) => setState(() => _form = v ?? _form),
+                      );
+
+                      final frequencyField = AppDropdown<String>(
                         label: 'Frequency',
                         value: _frequency,
                         items: _frequencies
-                            .map((f) =>
-                                DropdownMenuItem(value: f, child: Text(f)))
+                            .map(
+                              (f) => DropdownMenuItem<String>(
+                                value: f,
+                                child: Text(
+                                  f,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) =>
                             setState(() => _frequency = v ?? _frequency),
-                      ),
-                    ),
-                  ]),
+                      );
+
+                      if (isCompact) {
+                        return Column(
+                          children: [
+                            formField,
+                            const SizedBox(height: AppSpacing.md),
+                            frequencyField,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: formField),
+                          const SizedBox(width: 12),
+                          Expanded(child: frequencyField),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -225,50 +289,82 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Schedule Times',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Schedule Times',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.md),
-                  ..._times.asMap().entries.map((e) => Padding(
+                  ..._times.asMap().entries.map(
+                    (entry) {
+                      final index = entry.key;
+                      final time = entry.value;
+
+                      return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _pickTime(e.key),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.md),
-                                  border:
-                                      Border.all(color: AppColors.border),
-                                ),
-                                child: Row(children: [
-                                  const Icon(Icons.access_time_rounded,
-                                      size: 18, color: AppColors.textMuted),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    e.value.format(context),
-                                    style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w600),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _pickTime(index),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
                                   ),
-                                ]),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.access_time_rounded,
+                                        size: 18,
+                                        color: AppColors.textMuted,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Flexible(
+                                        child: Text(
+                                          time.format(context),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: AppColors.danger),
-                            onPressed: () => _removeTime(e.key),
-                          ),
-                        ]),
-                      )),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.remove_circle_outline,
+                                color: AppColors.danger,
+                              ),
+                              onPressed: () => _removeTime(index),
+                              tooltip: 'Remove time',
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   TextButton.icon(
                     onPressed: _addTime,
                     icon: const Icon(Icons.add_rounded, size: 18),
@@ -283,11 +379,14 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Instructions',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Instructions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   AppTextField(
                     label: 'Special Instructions (optional)',
@@ -304,37 +403,49 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Color Label',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Color Label',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('Choose a color to identify this medicine',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textMuted)),
+                  const Text(
+                    'Choose a color to identify this medicine',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                   const SizedBox(height: 14),
-                  Row(
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
                     children: _colorOptions.map((c) {
                       final color =
                           Color(int.parse(c.replaceFirst('#', '0xFF')));
                       final isSelected = _selectedColor == c;
+
                       return GestureDetector(
                         onTap: () => setState(() => _selectedColor = c),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: 38,
                           height: 38,
-                          margin: const EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
                             color: color,
                             shape: BoxShape.circle,
                             border: isSelected
                                 ? Border.all(
                                     color: AppColors.textPrimary,
-                                    width: 3)
+                                    width: 3,
+                                  )
                                 : Border.all(
-                                    color: Colors.transparent, width: 3),
+                                    color: Colors.transparent,
+                                    width: 3,
+                                  ),
                             boxShadow: [
                               BoxShadow(
                                 color: color.withOpacity(0.4),
@@ -344,8 +455,11 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
                             ],
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check_rounded,
-                                  color: Colors.white, size: 18)
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                )
                               : null,
                         ),
                       );
@@ -355,6 +469,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
+
             AppButton(
               label: _isEditing ? 'Save Changes' : 'Add Medicine',
               onPressed: _isLoading ? null : _save,
