@@ -446,9 +446,12 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(
+              SizedBox(
+                width: 160,
                 child: AppButton(
                   label: 'Refresh Location',
                   icon: Icons.refresh_rounded,
@@ -457,8 +460,8 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
                   isLoading: _isFetchingLocation,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: 160,
                 child: AppButton(
                   label: 'Open in Maps',
                   icon: Icons.map_rounded,
@@ -554,9 +557,12 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
                           : emergencyContactPhone,
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        Expanded(
+                        SizedBox(
+                          width: 160,
                           child: AppButton(
                             label: 'Call Contact',
                             icon: Icons.call_rounded,
@@ -569,8 +575,8 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
                             isLoading: _isCallingContact,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                        SizedBox(
+                          width: 160,
                           child: AppButton(
                             label: 'Send SOS SMS',
                             icon: Icons.sms_rounded,
@@ -697,9 +703,12 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        Expanded(
+                        SizedBox(
+                          width: 160,
                           child: AppButton(
                             label: 'Copy Message',
                             icon: Icons.copy_rounded,
@@ -707,13 +716,14 @@ class _SosEmergencyScreenState extends ConsumerState<SosEmergencyScreen> {
                             onPressed: () => _copyEmergencyMessage(sosMessage),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                        SizedBox(
+                          width: 160,
                           child: AppButton(
                             label: 'Open Map Link',
                             icon: Icons.open_in_new_rounded,
-                            onPressed:
-                                _isOpeningMap ? null : _openCurrentLocationInMaps,
+                            onPressed: _isOpeningMap
+                                ? null
+                                : _openCurrentLocationInMaps,
                             isLoading: _isOpeningMap,
                           ),
                         ),

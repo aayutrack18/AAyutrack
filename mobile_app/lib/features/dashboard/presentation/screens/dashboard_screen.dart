@@ -252,7 +252,7 @@ class DashboardScreen extends ConsumerWidget {
     final scoreColor = _scoreColor(score);
 
     return SliverAppBar(
-      expandedHeight: 280,
+      expandedHeight: 420,
       floating: true,
       pinned: false,
       stretch: true,
@@ -295,12 +295,14 @@ class DashboardScreen extends ConsumerWidget {
               ),
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${_greeting()}, $name',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -310,6 +312,8 @@ class DashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         _todayDate(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.82),
                           fontSize: 12,
@@ -534,28 +538,42 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _HomeMiniStatCard(
-                  title: 'Today Schedule',
-                  value: '$todayReminderCount',
-                  subtitle: nextReminderText,
-                  icon: Icons.event_note_rounded,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _HomeMiniStatCard(
-                  title: 'Health Tracking',
-                  value: '$todayHealthCount',
-                  subtitle: lastHealthLogText,
-                  icon: Icons.favorite_rounded,
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 380;
+              final scheduleCard = _HomeMiniStatCard(
+                title: 'Today Schedule',
+                value: '$todayReminderCount',
+                subtitle: nextReminderText,
+                icon: Icons.event_note_rounded,
+                color: AppColors.primary,
+              );
+              final healthCard = _HomeMiniStatCard(
+                title: 'Health Tracking',
+                value: '$todayHealthCount',
+                subtitle: lastHealthLogText,
+                icon: Icons.favorite_rounded,
+                color: AppColors.accent,
+              );
+
+              if (compact) {
+                return Column(
+                  children: [
+                    scheduleCard,
+                    const SizedBox(height: 10),
+                    healthCard,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: scheduleCard),
+                  const SizedBox(width: 10),
+                  Expanded(child: healthCard),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 14),
           Container(
@@ -592,12 +610,18 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  '$todayMedicineCount meds',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    '$todayMedicineCount meds',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -647,19 +671,39 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         const SectionHeader(title: 'Quick Actions'),
         const SizedBox(height: 12),
-        Row(
-          children: actions
-              .map(
-                (action) => Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: action == actions.last ? 0 : 10,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 420;
+            if (compact) {
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: actions
+                    .map(
+                      (action) => SizedBox(
+                        width: (constraints.maxWidth - 10) / 2,
+                        child: action,
+                      ),
+                    )
+                    .toList(),
+              );
+            }
+
+            return Row(
+              children: actions
+                  .map(
+                    (action) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: action == actions.last ? 0 : 10,
+                        ),
+                        child: action,
+                      ),
                     ),
-                    child: action,
-                  ),
-                ),
-              )
-              .toList(),
+                  )
+                  .toList(),
+            );
+          },
         ),
       ],
     );
@@ -1201,13 +1245,18 @@ class _HomeMiniStatCard extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: 18),
               ),
-              const Spacer(),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -1429,6 +1478,8 @@ class _MedicineOverviewCard extends StatelessWidget {
               children: [
                 Text(
                   medicine.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -1438,6 +1489,8 @@ class _MedicineOverviewCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${medicine.dosage} • ${medicine.frequency}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
@@ -1447,6 +1500,8 @@ class _MedicineOverviewCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     medicine.scheduledTimes.take(3).join('  •  '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 11,
                       color: accent,
@@ -1522,6 +1577,8 @@ class _ReminderOverviewCard extends StatelessWidget {
               children: [
                 Text(
                   reminder.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -1543,28 +1600,35 @@ class _ReminderOverviewCard extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                reminder.time,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: accent,
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 78,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  reminder.time,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                reminder.isDaily ? 'Daily' : reminder.repeatDays.join(', '),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textMuted,
+                const SizedBox(height: 3),
+                Text(
+                  reminder.isDaily ? 'Daily' : reminder.repeatDays.join(', '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1606,13 +1670,20 @@ class _HealthMiniCard extends StatelessWidget {
                   size: 18,
                 ),
               ),
+              const SizedBox(width: 8),
               const Spacer(),
               if (log != null)
-                Text(
-                  _timeAgo(log!.recordedAt),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    _timeAgo(log!.recordedAt),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
             ],

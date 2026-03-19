@@ -95,9 +95,9 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                 ] else ...[
                   _ScoreHero(state: state),
                   const SizedBox(height: 16),
-                  _buildMetricCards(state),
+                  _buildMetricCards(context, state),
                   const SizedBox(height: 16),
-                  _buildWeeklyChart(state),
+                  _buildWeeklyChart(context, state),
                   const SizedBox(height: 16),
                   _buildAlerts(context, state, ref),
                   const SizedBox(height: 16),
@@ -110,109 +110,78 @@ class ComplianceOverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricCards(ComplianceState state) {
+  Widget _buildMetricCards(BuildContext context, ComplianceState state) {
+    final isCompact = MediaQuery.of(context).size.width < 380;
+
+    if (isCompact) {
+      return Column(
+        children: [
+          _MetricCard(
+            icon: Icons.medication_rounded,
+            iconColor: AppColors.primary,
+            label: 'Medicine',
+            value: '${state.medicineAdherence.toInt()}%',
+            progress: state.medicineAdherence / 100,
+            progressColor: AppColors.primary,
+          ),
+          const SizedBox(height: 12),
+          _MetricCard(
+            icon: Icons.monitor_heart_rounded,
+            iconColor: AppColors.accent,
+            label: 'Health Logs',
+            value: '${state.logAdherence.toInt()}%',
+            progress: state.logAdherence / 100,
+            progressColor: AppColors.accent,
+          ),
+        ],
+      );
+    }
+
     return Row(
       children: [
         Expanded(
-          child: AppCard(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.medication_rounded,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Medicine',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${state.medicineAdherence.toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: state.medicineAdherence / 100,
-                  backgroundColor: AppColors.border,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-                  borderRadius: BorderRadius.circular(3),
-                  minHeight: 5,
-                ),
-              ],
-            ),
+          child: _MetricCard(
+            icon: Icons.medication_rounded,
+            iconColor: AppColors.primary,
+            label: 'Medicine',
+            value: '${state.medicineAdherence.toInt()}%',
+            progress: state.medicineAdherence / 100,
+            progressColor: AppColors.primary,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: AppCard(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.monitor_heart_rounded,
-                      size: 16,
-                      color: AppColors.accent,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Health Logs',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${state.logAdherence.toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: state.logAdherence / 100,
-                  backgroundColor: AppColors.border,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.accent),
-                  borderRadius: BorderRadius.circular(3),
-                  minHeight: 5,
-                ),
-              ],
-            ),
+          child: _MetricCard(
+            icon: Icons.monitor_heart_rounded,
+            iconColor: AppColors.accent,
+            label: 'Health Logs',
+            value: '${state.logAdherence.toInt()}%',
+            progress: state.logAdherence / 100,
+            progressColor: AppColors.accent,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildWeeklyChart(ComplianceState state) {
+  Widget _buildWeeklyChart(BuildContext context, ComplianceState state) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+    final chartHeight = isCompact ? 124.0 : 138.0;
+    final barMaxHeight = isCompact ? 64.0 : 76.0;
+    final barWidth = isCompact ? 22.0 : 28.0;
+    final labelFontSize = isCompact ? 9.0 : 10.0;
+    final percentFontSize = isCompact ? 8.0 : 9.0;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runSpacing: 8,
+            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text(
                 'Weekly Adherence',
@@ -239,7 +208,7 @@ class ComplianceOverviewScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           if (state.weeklyTrend.isEmpty)
             const Text(
               'No adherence trend available yet.',
@@ -247,7 +216,7 @@ class ComplianceOverviewScreen extends ConsumerWidget {
             )
           else
             SizedBox(
-              height: 100,
+              height: chartHeight,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -259,37 +228,54 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                           ? AppColors.warning
                           : AppColors.danger;
 
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${w.percentage.toInt()}%',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: color,
+                  return Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${w.percentage.toInt()}%',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: percentFontSize,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 600),
+                              width: barWidth,
+                              height: barMaxHeight * pct,
+                              constraints: BoxConstraints(
+                                minHeight: pct > 0 ? 8 : 0,
+                                maxHeight: barMaxHeight,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              w.day,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: labelFontSize,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        width: 28,
-                        height: 80 * pct,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        w.day,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                    ),
                   );
                 }).toList(),
               ),
@@ -300,11 +286,14 @@ class ComplianceOverviewScreen extends ConsumerWidget {
   }
 
   Widget _buildDoctorSummary(BuildContext context) {
+    final isCompact = MediaQuery.of(context).size.width < 380;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
@@ -331,11 +320,13 @@ class ComplianceOverviewScreen extends ConsumerWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
+                    SizedBox(height: 2),
                     Text(
                       'Send your compliance report to your healthcare provider',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
+                        height: 1.35,
                       ),
                     ),
                   ],
@@ -346,36 +337,76 @@ class ComplianceOverviewScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryPoint(
-                  icon: Icons.medication_rounded,
-                  color: AppColors.primary,
-                  label: 'Medicine',
-                  description: 'Adherence data',
+          isCompact
+              ? Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryPoint(
+                            icon: Icons.medication_rounded,
+                            color: AppColors.primary,
+                            label: 'Medicine',
+                            description: 'Adherence data',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _SummaryPoint(
+                            icon: Icons.monitor_heart_rounded,
+                            color: AppColors.accent,
+                            label: 'Vitals',
+                            description: 'Trend charts',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SummaryPoint(
+                            icon: Icons.warning_rounded,
+                            color: AppColors.warning,
+                            label: 'Alerts',
+                            description: 'Risk flags',
+                          ),
+                        ),
+                        const Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryPoint(
+                        icon: Icons.medication_rounded,
+                        color: AppColors.primary,
+                        label: 'Medicine',
+                        description: 'Adherence data',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _SummaryPoint(
+                        icon: Icons.monitor_heart_rounded,
+                        color: AppColors.accent,
+                        label: 'Vitals',
+                        description: 'Trend charts',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _SummaryPoint(
+                        icon: Icons.warning_rounded,
+                        color: AppColors.warning,
+                        label: 'Alerts',
+                        description: 'Risk flags',
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryPoint(
-                  icon: Icons.monitor_heart_rounded,
-                  color: AppColors.accent,
-                  label: 'Vitals',
-                  description: 'Trend charts',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryPoint(
-                  icon: Icons.warning_rounded,
-                  color: AppColors.warning,
-                  label: 'Alerts',
-                  description: 'Risk flags',
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -539,10 +570,12 @@ class _ScoreHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _scoreColor(state.overallScore);
+    final isCompact = MediaQuery.of(context).size.width < 380;
 
     return GradientCard(
       colors: [AppColors.primary, const Color(0xFF1E40AF)],
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -555,9 +588,9 @@ class _ScoreHero extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${state.overallScore.toInt()}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 38,
+                    fontSize: isCompact ? 34 : 38,
                     fontWeight: FontWeight.w900,
                     height: 1.0,
                   ),
@@ -584,9 +617,10 @@ class _ScoreHero extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Container(
-            width: 84,
-            height: 84,
+            width: isCompact ? 74 : 84,
+            height: isCompact ? 74 : 84,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white24, width: 8),
@@ -597,7 +631,7 @@ class _ScoreHero extends StatelessWidget {
                 color: color == AppColors.warning || color == AppColors.danger
                     ? Colors.white
                     : Colors.white,
-                size: 34,
+                size: isCompact ? 30 : 34,
               ),
             ),
           ),
@@ -734,6 +768,8 @@ class _SummaryPoint extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
         Text(
@@ -741,8 +777,11 @@ class _SummaryPoint extends StatelessWidget {
           style: const TextStyle(
             fontSize: 10,
             color: AppColors.textMuted,
+            height: 1.3,
           ),
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -776,6 +815,74 @@ class _ErrorBanner extends StatelessWidget {
                 height: 1.45,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final double progress;
+  final Color progressColor;
+
+  const _MetricCard({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.progress,
+    required this.progressColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: iconColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: progress.clamp(0.0, 1.0),
+            backgroundColor: AppColors.border,
+            valueColor: AlwaysStoppedAnimation(progressColor),
+            borderRadius: BorderRadius.circular(3),
+            minHeight: 5,
           ),
         ],
       ),

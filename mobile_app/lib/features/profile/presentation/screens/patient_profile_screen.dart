@@ -102,17 +102,43 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
 
   Widget _buildProfile(BuildContext context, ProfileState state) {
     final p = state.profile!;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+
     final initials = p.fullName
         .trim()
         .split(' ')
+        .where((n) => n.trim().isNotEmpty)
         .take(2)
-        .map((n) => n.isEmpty ? '' : n[0].toUpperCase())
+        .map((n) => n[0].toUpperCase())
         .join();
+
+    final heightCm =
+        (p.heightCm != null && p.heightCm! > 0) ? p.heightCm : null;
+    final weightKg =
+        (p.weightKg != null && p.weightKg! > 0) ? p.weightKg : null;
+
+    String? bmiValue;
+    if (heightCm != null && weightKg != null) {
+      final bmi = weightKg / ((heightCm / 100) * (heightCm / 100));
+      if (bmi.isFinite && !bmi.isNaN) {
+        bmiValue = bmi.toStringAsFixed(1);
+      }
+    }
+
+    final metaParts = <String>[
+      if (p.age > 0) '${p.age} yrs',
+      if (p.gender.trim().isNotEmpty) p.gender.trim(),
+      if (p.bloodGroup.trim().isNotEmpty) p.bloodGroup.trim(),
+    ];
+
+    final profileMeta =
+        metaParts.isNotEmpty ? metaParts.join(' · ') : 'Patient';
 
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 220,
+          expandedHeight: isCompact ? 286 : 274,
           pinned: true,
           backgroundColor: AppColors.primary,
           leading: const SizedBox.shrink(),
@@ -141,59 +167,92 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                 ),
               ),
               child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    CircleAvatar(
-                      radius: 44,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      child: Text(
-                        initials,
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    isCompact ? 16 : 20,
+                    20,
+                    isCompact ? 28 : 24,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: isCompact ? 32 : 36),
+                      CircleAvatar(
+                        radius: isCompact ? 40 : 44,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        child: Text(
+                          initials.isEmpty ? 'P' : initials,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: isCompact ? 28 : 30,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      p.fullName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${p.age} yrs · ${p.gender} · ${p.bloodGroup}',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        p.isSynced ? '● Synced' : '● Pending sync',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                      SizedBox(height: isCompact ? 10 : 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          p.fullName.trim().isEmpty
+                              ? 'Patient Profile'
+                              : p.fullName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isCompact ? 18 : 20,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          profileMeta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: isCompact ? 12 : 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isCompact ? 180 : 220,
+                        ),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 10 : 12,
+                            vertical: isCompact ? 5 : 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            p.isSynced ? '● Synced' : '● Pending sync',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isCompact ? 10 : 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -206,19 +265,25 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
               children: [
                 Row(
                   children: [
-                    _InfoChip(Icons.phone_rounded, p.phoneNumber),
+                    Expanded(
+                      child: _InfoChip(
+                        Icons.phone_rounded,
+                        p.phoneNumber.isEmpty ? 'Phone not added' : p.phoneNumber,
+                      ),
+                    ),
                   ],
                 ),
                 if (p.email.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _InfoChip(Icons.email_rounded, p.email),
+                      Expanded(
+                        child: _InfoChip(Icons.email_rounded, p.email),
+                      ),
                     ],
                   ),
                 ],
                 const SizedBox(height: 16),
-
                 if (p.medicalConditions.isNotEmpty)
                   ProfileInfoCard(
                     title: 'Medical Conditions',
@@ -233,7 +298,6 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                       ),
                     ],
                   ),
-
                 if (p.allergies.isNotEmpty)
                   ProfileInfoCard(
                     title: 'Allergies',
@@ -250,38 +314,34 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                       ),
                     ],
                   ),
-
                 ProfileInfoCard(
                   title: 'Body Metrics',
                   icon: Icons.monitor_weight_outlined,
                   children: [
-                    _infoRow('Blood Group', p.bloodGroup),
-                    if (p.heightCm != null) ...[
+                    _infoRow(
+                      'Blood Group',
+                      p.bloodGroup.trim().isEmpty ? 'Not set' : p.bloodGroup,
+                    ),
+                    if (heightCm != null) ...[
                       const Divider(color: AppColors.border, height: 20),
                       _infoRow(
                         'Height',
-                        '${p.heightCm!.toStringAsFixed(1)} cm',
+                        '${heightCm.toStringAsFixed(1)} cm',
                       ),
                     ],
-                    if (p.weightKg != null) ...[
+                    if (weightKg != null) ...[
                       const Divider(color: AppColors.border, height: 20),
                       _infoRow(
                         'Weight',
-                        '${p.weightKg!.toStringAsFixed(1)} kg',
+                        '${weightKg.toStringAsFixed(1)} kg',
                       ),
                     ],
-                    if (p.heightCm != null && p.weightKg != null) ...[
+                    if (bmiValue != null) ...[
                       const Divider(color: AppColors.border, height: 20),
-                      _infoRow(
-                        'BMI',
-                        (p.weightKg! /
-                                ((p.heightCm! / 100) * (p.heightCm! / 100)))
-                            .toStringAsFixed(1),
-                      ),
+                      _infoRow('BMI', bmiValue),
                     ],
                   ],
                 ),
-
                 if (p.emergencyContactName.isNotEmpty)
                   ProfileInfoCard(
                     title: 'Emergency Contact',
@@ -291,10 +351,14 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                     children: [
                       _infoRow('Name', p.emergencyContactName),
                       const Divider(color: AppColors.border, height: 20),
-                      _infoRow('Phone', p.emergencyContactPhone),
+                      _infoRow(
+                        'Phone',
+                        p.emergencyContactPhone.isEmpty
+                            ? 'Not set'
+                            : p.emergencyContactPhone,
+                      ),
                     ],
                   ),
-
                 if (p.address.isNotEmpty)
                   ProfileInfoCard(
                     title: 'Address',
@@ -309,7 +373,6 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                       ),
                     ],
                   ),
-
                 const SizedBox(height: 8),
                 AppButton(
                   label: 'Edit Profile',
@@ -321,7 +384,6 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
                 ProfileInfoCard(
                   title: 'Settings',
                   icon: Icons.settings_rounded,
@@ -364,11 +426,11 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                       icon: Icons.logout_rounded,
                       iconColor: AppColors.danger,
                       label: _isLoggingOut ? 'Logging out...' : 'Log Out',
-                      onTap: _isLoggingOut ? () {} : () => _handleLogout(context),
+                      onTap:
+                          _isLoggingOut ? () {} : () => _handleLogout(context),
                     ),
                   ],
                 ),
-
                 ProfileInfoCard(
                   title: 'About',
                   icon: Icons.info_outline_rounded,
@@ -400,20 +462,24 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
 
   Widget _infoRow(String label, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 13,
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 12),
         Flexible(
           child: Text(
             value,
             textAlign: TextAlign.right,
             overflow: TextOverflow.ellipsis,
+            maxLines: 2,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -489,6 +555,7 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -496,14 +563,14 @@ class _InfoChip extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: AppColors.textMuted),
           const SizedBox(width: 6),
-          Flexible(
+          Expanded(
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
