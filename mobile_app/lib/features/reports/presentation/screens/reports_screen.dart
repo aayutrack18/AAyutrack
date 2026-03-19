@@ -159,6 +159,14 @@ class _GenerateTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
+        _ReportsHeroCard(
+          overallScore: compliance.overallScore,
+          scoreLabel: compliance.scoreLabel,
+          activeAlerts: compliance.unreadAlertCount,
+          canGenerate: reportsState.canGenerate,
+          isBusy: isBaseDataLoading || reportsState.isExporting,
+        ),
+        const SizedBox(height: 16),
         if (isBaseDataLoading) ...[
           const _InlineMessageCard(
             icon: Icons.sync_rounded,
@@ -199,82 +207,13 @@ class _GenerateTab extends ConsumerWidget {
                 'Your report has been added to history and is ready to share again from the History tab.',
             color: AppColors.success,
             trailing: TextButton(
-              onPressed: () => ref.read(reportsProvider.notifier).clearExportSuccess(),
+              onPressed: () =>
+                  ref.read(reportsProvider.notifier).clearExportSuccess(),
               child: const Text('Dismiss'),
             ),
           ),
           const SizedBox(height: 12),
         ],
-        GradientCard(
-          colors: const [AppColors.primary, Color(0xFF1E40AF)],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Monthly Compliance',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    '${compliance.overallScore.toInt()}%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            compliance.scoreLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${compliance.unreadAlertCount} active alert${compliance.unreadAlertCount == 1 ? '' : 's'}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: compliance.overallScore / 100,
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  valueColor: const AlwaysStoppedAnimation(Colors.white),
-                  minHeight: 6,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
         _DataReadinessCard(
           hasSupportingData: hasSupportingData,
           profileAvailable: profileState.profile != null,
@@ -283,7 +222,11 @@ class _GenerateTab extends ConsumerWidget {
           enabledSectionCount: reportsState.enabledSections.length,
         ),
         const SizedBox(height: 20),
-        const SectionHeader(title: 'Key Metrics'),
+        const _SectionIntro(
+          title: 'Key metrics',
+          subtitle:
+              'A concise snapshot of adherence, activity, and reporting coverage.',
+        ),
         const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 2,
@@ -320,7 +263,11 @@ class _GenerateTab extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 20),
-        const SectionHeader(title: 'Weekly Adherence Trend'),
+        const _SectionIntro(
+          title: 'Weekly adherence trend',
+          subtitle:
+              'Use this to explain how the report turns daily actions into a simple care summary.',
+        ),
         const SizedBox(height: 10),
         if (compliance.weeklyTrend.isEmpty)
           const AppCard(
@@ -391,14 +338,19 @@ class _GenerateTab extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: 20),
-        const SectionHeader(title: 'Report Template'),
+        const _SectionIntro(
+          title: 'Report template',
+          subtitle:
+              'Choose the presentation style that best fits your demo or doctor-sharing flow.',
+        ),
         const SizedBox(height: 10),
         ...templates.map((template) {
           final isSelected = reportsState.selectedTemplateId == template.id;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: GestureDetector(
-              onTap: () => ref.read(reportsProvider.notifier).setTemplate(template.id),
+              onTap: () =>
+                  ref.read(reportsProvider.notifier).setTemplate(template.id),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
@@ -461,7 +413,11 @@ class _GenerateTab extends ConsumerWidget {
           );
         }),
         const SizedBox(height: 20),
-        const SectionHeader(title: 'Include Sections'),
+        const _SectionIntro(
+          title: 'Include sections',
+          subtitle:
+              'Turn sections on or off to generate a report with the exact level of detail you want.',
+        ),
         const SizedBox(height: 10),
         AppCard(
           child: Column(
@@ -526,6 +482,12 @@ class _GenerateTab extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 20),
+        const _SectionIntro(
+          title: 'Date range',
+          subtitle:
+              'Control which period is reflected in the exported report and preview.',
+        ),
+        const SizedBox(height: 10),
         _DateRangeSelector(
           startDate: reportsState.startDate,
           endDate: reportsState.endDate,
@@ -534,7 +496,7 @@ class _GenerateTab extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         AppButton(
-          label: reportsState.isExporting ? 'Preparing…' : 'Preview Report',
+          label: reportsState.isExporting ? 'Preparing…' : 'Preview report',
           icon: Icons.visibility_rounded,
           isLoading: false,
           onPressed: reportsState.isExporting ||
@@ -659,48 +621,7 @@ class _HistoryTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
-        AppCard(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.history_rounded,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${history.length} report${history.length == 1 ? '' : 's'} generated',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const Text(
-                      'Saved PDFs can be reshared from here.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _HistorySummaryCard(reportCount: history.length),
         const SizedBox(height: 16),
         ...history.map(
           (item) => Padding(
@@ -816,7 +737,9 @@ class _HistoryTab extends ConsumerWidget {
                           isDangerous: true,
                         );
                         if (confirm == true) {
-                          ref.read(reportsProvider.notifier).deleteHistory(item.id);
+                          ref
+                              .read(reportsProvider.notifier)
+                              .deleteHistory(item.id);
                         }
                       },
                       icon: const Icon(
@@ -1259,6 +1182,259 @@ class _DataReadinessCard extends StatelessWidget {
                 color: AppColors.primary,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportsHeroCard extends StatelessWidget {
+  final double overallScore;
+  final String scoreLabel;
+  final int activeAlerts;
+  final bool canGenerate;
+  final bool isBusy;
+
+  const _ReportsHeroCard({
+    required this.overallScore,
+    required this.scoreLabel,
+    required this.activeAlerts,
+    required this.canGenerate,
+    required this.isBusy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GradientCard(
+      colors: const [AppColors.primary, Color(0xFF1E40AF)],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _HeroPill(
+                label: canGenerate ? 'Ready to generate' : 'Setup required',
+                icon: canGenerate
+                    ? Icons.check_circle_rounded
+                    : Icons.info_rounded,
+              ),
+              _HeroPill(
+                label: activeAlerts == 0
+                    ? 'No active alerts'
+                    : '$activeAlerts active alert${activeAlerts == 1 ? '' : 's'}',
+                icon: Icons.notifications_active_rounded,
+              ),
+              _HeroPill(
+                label: isBusy ? 'Syncing data' : 'Live provider data',
+                icon: Icons.sync_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Care reports built for sharing',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Generate a clean patient summary using medicines, health logs, and adherence insights from the current app state.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.86),
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Text(
+                '${overallScore.toInt()}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        scoreLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Monthly compliance score reflected in the report summary.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.78),
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: overallScore / 100,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              valueColor: const AlwaysStoppedAnimation(Colors.white),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistorySummaryCard extends StatelessWidget {
+  final int reportCount;
+
+  const _HistorySummaryCard({required this.reportCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.history_rounded,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$reportCount report${reportCount == 1 ? '' : 's'} generated',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Saved PDFs can be reshared, reviewed, or deleted from here.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionIntro extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _SectionIntro({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textMuted,
+            height: 1.45,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+
+  const _HeroPill({
+    required this.label,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

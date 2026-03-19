@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,20 +15,41 @@ import 'router/app_router.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
-
-  await FcmService.instance.initialize();
-
   final container = ProviderContainer();
 
-  await container.read(demoDataSeedServiceProvider).seedIfNeeded();
-  await container.read(appStartupSyncProvider);
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    FirebaseMessaging.onBackgroundMessage(
+      firebaseMessagingBackgroundHandler,
+    );
+  } catch (e, st) {
+    debugPrint('Firebase startup failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
+
+  try {
+    await FcmService.instance.initialize();
+  } catch (e, st) {
+    debugPrint('FCM initialization failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
+
+  try {
+    await container.read(demoDataSeedServiceProvider).seedIfNeeded();
+  } catch (e, st) {
+    debugPrint('Demo data seed failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
+
+  try {
+    await container.read(appStartupSyncProvider);
+  } catch (e, st) {
+    debugPrint('Startup sync failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
 
   runApp(
     UncontrolledProviderScope(
@@ -50,7 +72,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     super.initState();
 
     Future.microtask(() async {
-      await FcmService.instance.syncTokenForSignedInUser();
+      try {
+        await FcmService.instance.syncTokenForSignedInUser();
+      } catch (e, st) {
+        debugPrint('FCM token sync failed: $e');
+        debugPrintStack(stackTrace: st);
+      }
     });
   }
 
